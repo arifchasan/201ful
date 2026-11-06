@@ -2047,13 +2047,6 @@ textarea {
   font-size: 0.95rem;
   width: 30%;
 }
-.budget-table tbody td:last-child {
-  font-family: var(--font-display);
-  font-weight: 600;
-  white-space: nowrap;
-  text-align: right;
-  font-size: 0.95rem;
-}
 .budget-table tfoot th,
 .budget-table tfoot td {
   background: var(--sun-soft);
@@ -2204,11 +2197,6 @@ textarea {
     letter-spacing: 0.07em;
     text-transform: uppercase;
     color: var(--ink-soft);
-  }
-  .budget-table tbody td:last-child,
-  .budget-table tfoot td {
-    text-align: left;
-    margin-top: 6px;
   }
   .budget-table tfoot tr {
     background: var(--sun-soft);
