@@ -2570,3 +2570,37 @@ textarea {
     gap: 24px;
   }
 }
+
+/* =========================== Relawan =========================== */
+
+.volunteer-card {
+  display: grid;
+  gap: 24px;
+  padding: 24px 20px;
+}
+.volunteer-card h3 {
+  font-size: 1.35rem;
+  margin-bottom: 10px;
+}
+.volunteer-text {
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+  max-width: 56ch;
+}
+.volunteer-card .chips {
+  margin-top: 16px;
+}
+.volunteer-cta {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+@media (min-width: 860px) {
+  .volunteer-card {
+    grid-template-columns: 1.5fr 1fr;
+    align-items: center;
+    gap: 36px;
+    padding: 30px 28px;
+  }
+}
