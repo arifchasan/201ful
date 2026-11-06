@@ -2570,3 +2570,233 @@ textarea {
     padding: 30px 28px;
   }
 }
+
+/* =========================== Bukti transfer =========================== */
+
+.bukti-layout {
+  display: grid;
+  gap: 18px;
+  align-items: start;
+}
+@media (min-width: 900px) {
+  .bukti-layout {
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 24px;
+  }
+}
+
+.bukti-card {
+  min-width: 0;
+  padding: 22px 20px;
+}
+.bukti-card h2 {
+  font-size: 1.28rem;
+  margin-bottom: 10px;
+}
+.bukti-field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  margin-bottom: 14px;
+}
+.bukti-field > label {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+.bukti-field input[type="text"],
+.bukti-field input[type="number"],
+.bukti-field textarea {
+  width: 100%;
+  padding: 11px 14px;
+  border: 2.5px solid var(--ink);
+  border-radius: 14px;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+}
+.bukti-field input:focus,
+.bukti-field textarea:focus {
+  outline: 3px solid var(--sun-soft);
+  border-color: var(--ink);
+}
+.bukti-file {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 16px;
+  border: 3px dashed rgba(10, 56, 118, 0.35);
+  border-radius: 18px;
+  background: var(--sky);
+}
+.bukti-file input[type="file"] {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: var(--ink);
+}
+.bukti-help {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--ink-soft);
+}
+.bukti-preview {
+  display: none;
+  margin-top: 12px;
+}
+.bukti-preview.is-visible {
+  display: block;
+}
+.bukti-preview img {
+  width: 100%;
+  max-height: 300px;
+  object-fit: contain;
+  border: 2.5px solid var(--ink);
+  border-radius: 16px;
+  background: #ffffff;
+}
+.bukti-aside h2 {
+  font-size: 1.15rem;
+}
+.bukti-steps {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+}
+.bukti-steps li {
+  position: relative;
+  padding-left: 30px;
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+}
+.bukti-steps li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 6px;
+  width: 13px;
+  height: 13px;
+  border: 2.5px solid var(--ink);
+  border-radius: 50%;
+  background: var(--sun);
+}
+.form-note[data-state="error"] {
+  color: #c0392b;
+}
+.form-note[data-state="success"] {
+  color: #1c7a4a;
+}
+
+.bukti-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.bukti-count {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+.bukti-grid {
+  display: grid;
+  gap: 16px;
+}
+@media (min-width: 640px) {
+  .bukti-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (min-width: 1000px) {
+  .bukti-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+.bukti-item {
+  padding: 14px;
+}
+.bukti-item-thumb {
+  display: block;
+  aspect-ratio: 4 / 3;
+  border: 2.5px solid var(--ink);
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--sky);
+}
+.bukti-item-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.bukti-item h3 {
+  font-size: 1.02rem;
+  margin: 12px 0 4px;
+}
+.bukti-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 12px;
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+.bukti-nominal {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.02rem;
+  color: var(--ink);
+}
+.bukti-catatan {
+  font-size: 0.84rem;
+  color: var(--ink-soft);
+  margin: 8px 0 0;
+}
+.bukti-empty {
+  padding: 32px 20px;
+  text-align: center;
+  font-size: 0.92rem;
+  color: var(--ink-soft);
+}
+
+.bukti-success {
+  max-width: 420px;
+  text-align: center;
+}
+.bukti-success .modal-body {
+  padding: 28px 22px 24px;
+}
+.bukti-success-icon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 14px;
+  border: 3px solid var(--ink);
+  border-radius: 50%;
+  background: var(--sun-soft);
+  box-shadow: var(--shadow-sm);
+  color: var(--ink);
+}
+.bukti-success-icon svg {
+  width: 34px;
+  height: 34px;
+}
+.bukti-success h2 {
+  margin-bottom: 6px;
+  padding-right: 0;
+}
+.bukti-success .modal-lead {
+  margin-bottom: 16px;
+}
+.bukti-success .small-note {
+  margin-top: 10px;
+}

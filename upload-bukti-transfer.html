@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Upload bukti transfer · 201FUL LP201 AsiaWorks</title>
+<meta name="description" content="Unggah foto bukti transfer donasi WOW DAY 201FUL supaya donasimu dicatat divisi Finance." />
+<meta name="theme-color" content="#0A3876" />
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-5TH245ZV');</script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+</script>
+<!-- End Google Tag Manager -->
+<link rel="icon" href="images/logolp201-mark.png" type="image/png" />
+<link rel="apple-touch-icon" href="images/logolp201-mark.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-5TH245ZV" height="0" width="0" style="display:none;visibility:hidden" title="Google Tag Manager"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+<a class="skip-link" href="#konten">Lewati ke konten</a>
+
+<header class="site-header" id="site-header">
+  <div class="wrap header-inner">
+    <a class="brand" href="index.html" aria-label="201FUL LP201 AsiaWorks, ke beranda">
+      <img class="brand-logo" src="images/logolp201-mark.png" alt="201Ful — One Team, One Heart, One Love" width="2752" height="1536" />
+    </a>
+
+    <nav class="nav" id="primary-nav" aria-label="Navigasi utama">
+      <a href="index.html#tentang">Tentang Kami</a>
+      <a href="index.html#acara">Acara</a>
+      <a href="index.html#relawan">Relawan</a>
+      <a href="index.html#legacy">Legacy</a>
+      <a href="index.html#donasi" aria-current="page">Donasi</a>
+      <a href="tim.html">Tim</a>
+      <a class="btn btn--sm btn--coral nav-cta" href="index.html#donasi">Donasi</a>
+    </nav>
+
+    <button class="nav-toggle" id="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" aria-label="Buka menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</header>
+
+<main id="konten">
+  <section class="page-hero">
+    <div class="wrap">
+      <p class="eyebrow eyebrow--sun">Donasi &middot; 201FUL</p>
+      <h1>Upload <span class="hl">bukti transfer</span>.</h1>
+      <p class="lead">Sudah transfer atau scan QRIS? Unggah foto bukti transfer di sini. Divisi Finance akan mencocokkannya dengan mutasi rekening, lalu mencatat donasimu.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap bukti-layout">
+      <form class="card bukti-card" id="bukti-form" novalidate>
+        <h2>Data donasi</h2>
+
+        <div class="bukti-field">
+          <label for="nama">Nama donatur</label>
+          <input id="nama" name="nama" type="text" autocomplete="name" placeholder="Nama sesuai pengirim transfer" maxlength="80" required />
+        </div>
+
+        <div class="bukti-field">
+          <label for="nominal">Nominal transfer <span class="bukti-help">(opsional)</span></label>
+          <input id="nominal" name="nominal" type="number" inputmode="numeric" min="0" step="1000" placeholder="Contoh: 250000" />
+        </div>
+
+        <div class="bukti-field">
+          <label for="catatan">Catatan <span class="bukti-help">(opsional)</span></label>
+          <textarea id="catatan" name="catatan" rows="3" maxlength="300" placeholder="Misal: transfer dari Sea Bank a/n keluarga Budi"></textarea>
+        </div>
+
+        <div class="bukti-field">
+          <label for="bukti">Foto bukti transfer</label>
+          <div class="bukti-file">
+            <input id="bukti" name="bukti" type="file" accept="image/png,image/jpeg,image/webp,image/gif" required />
+            <span class="bukti-help">Hanya gambar JPG, PNG, WEBP, atau GIF. Maksimal 8 MB.</span>
+          </div>
+          <div class="bukti-preview" id="bukti-preview">
+            <img id="bukti-preview-img" alt="Pratinjau bukti transfer" />
+          </div>
+        </div>
+
+        <button class="btn btn--coral btn--block" type="submit" id="bukti-submit">Kirim bukti transfer</button>
+        <p class="form-note" id="bukti-note" role="status" aria-live="polite"></p>
+      </form>
+
+      <aside class="card bukti-card bukti-aside">
+        <h2>Setelah dikirim</h2>
+        <ul class="bukti-steps">
+          <li>Bukti masuk ke daftar panitia dan dicek satu per satu.</li>
+          <li>Nominal dicocokkan dengan mutasi rekening Sea Bank atau QRIS.</li>
+          <li>Kalau bukti kurang jelas, tim menghubungi lewat data yang kamu tulis.</li>
+        </ul>
+        <p class="small-note">Simpan bukti transfer asli sampai panitia mengonfirmasi. Pertanyaan lain bisa lewat WhatsApp resmi 0812-8935-1994.</p>
+        <p class="small-note"><a href="index.html#donasi">Kembali ke bagian donasi</a></p>
+      </aside>
+    </div>
+  </section>
+</main>
+
+<dialog class="modal bukti-success" id="bukti-success" aria-labelledby="bukti-success-title">
+  <div class="modal-body bukti-success-body">
+    <span class="bukti-success-icon" aria-hidden="true">
+      <svg viewBox="0 0 32 32"><path d="M7 17l6 6 12-14" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </span>
+    <h2 id="bukti-success-title">Bukti transfer terkirim!</h2>
+    <p class="modal-lead">Terima kasih. Bukti kamu sudah masuk ke daftar panitia dan akan dicek divisi Finance. Simpan bukti transfer asli sampai ada konfirmasi.</p>
+    <button class="btn btn--coral btn--block" type="button" id="bukti-success-close">Tutup</button>
+    <p class="small-note">Ada pertanyaan? WhatsApp resmi 0812-8935-1994.</p>
+  </div>
+</dialog>
+
+<footer class="site-footer">
+  <div class="wrap footer-inner">
+    <div class="footer-brand">
+      <a class="brand brand--footer" href="index.html" aria-label="201FUL LP201 AsiaWorks, ke beranda">
+        <img class="brand-logo" src="images/logolp201-mark.png" alt="201Ful — One Team, One Heart, One Love" width="2752" height="1536" />
+      </a>
+      <p>One team, one heart, one love.</p>
+    </div>
+
+    <nav class="footer-nav" aria-label="Navigasi footer">
+      <h3>Jelajahi</h3>
+      <a href="index.html#tentang">Tentang Kami</a>
+      <a href="index.html#acara">Acara</a>
+      <a href="index.html#relawan">Relawan</a>
+      <a href="index.html#legacy">Legacy</a>
+      <a href="index.html#donasi">Donasi</a>
+      <a href="tim.html">Tim</a>
+    </nav>
+
+    <div class="footer-news">
+      <h3>Terhubung</h3>
+      <p>Ikuti keseharian tim kami di Instagram.</p>
+      <div class="socials">
+        <a href="https://www.instagram.com/201ful/" target="_blank" rel="noopener" aria-label="Instagram 201FUL">Instagram</a>
+      </div>
+    </div>
+  </div>
+  <div class="wrap footer-bottom">
+    <p>&copy; 2026 LP201 &middot; 201FUL. One team, one heart, one love.</p>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+<script src="bukti-transfer.js"></script>
+</body>
+</html>

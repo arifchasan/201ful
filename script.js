@@ -186,7 +186,7 @@
 
   if (copyButton) {
     copyButton.addEventListener("click", function () {
-      var account = "1234567890";
+      var account = "901108162197";
       var done = function () {
         copyNote.textContent = "Nomor rekening tersalin.";
         setTimeout(function () {

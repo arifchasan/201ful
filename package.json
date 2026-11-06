@@ -18,5 +18,8 @@
   },
   "devDependencies": {
     "pm2": "^7.1.2"
+  },
+  "dependencies": {
+    "mysql2": "^3.24.6"
   }
 }
