@@ -1,0 +1,22 @@
+{
+  "name": "201ful-lp201",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Landing page statis 201FUL / LP201 AsiaWorks (WOW Day)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "pm2:start": "pm2 start ecosystem.config.js",
+    "pm2:restart": "pm2 restart 201ful",
+    "pm2:reload": "pm2 reload 201ful",
+    "pm2:status": "pm2 list",
+    "pm2:logs": "pm2 logs 201ful",
+    "pm2:stop": "pm2 delete 201ful"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "pm2": "^7.1.2"
+  }
+}
