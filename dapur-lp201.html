@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Dapur LP201 — target donasi &amp; data donatur</title>
+<meta name="description" content="Halaman internal untuk mengatur target donasi dan mengisi data donatur 201FUL." />
+<meta name="theme-color" content="#0A3876" />
+<meta name="robots" content="noindex, nofollow" />
+<link rel="icon" href="images/logolp201-mark.png" type="image/png" />
+<link rel="apple-touch-icon" href="images/logolp201-mark.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<a class="skip-link" href="#konten">Lewati ke konten</a>
+
+<header class="site-header" id="site-header">
+  <div class="wrap header-inner">
+    <a class="brand" href="index.html" aria-label="201FUL LP201 AsiaWorks, ke beranda">
+      <img class="brand-logo" src="images/logolp201-mark.png" alt="201Ful — One Team, One Heart, One Love" width="2752" height="1536" />
+    </a>
+
+    <nav class="nav" id="primary-nav" aria-label="Navigasi utama">
+      <a href="index.html#tentang">Tentang Kami</a>
+      <a href="index.html#acara">Acara</a>
+      <a href="index.html#relawan">Relawan</a>
+      <a href="index.html#legacy">Legacy</a>
+      <a href="index.html#donasi">Donasi</a>
+      <a href="donatur.html">Donatur</a>
+      <a href="tim.html">Tim</a>
+      <a class="btn btn--sm btn--coral nav-cta" href="index.html#donasi">Donasi</a>
+    </nav>
+
+    <button class="nav-toggle" id="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" aria-label="Buka menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</header>
+
+<main id="konten">
+  <section class="page-hero">
+    <div class="wrap">
+      <p class="eyebrow eyebrow--sun">Internal &middot; Finance</p>
+      <h1>Dapur <span class="hl">LP201</span>.</h1>
+      <p class="lead">Atur target donasi, catat donasi yang sudah masuk di luar daftar nama, dan isi data donatur. Perubahan langsung tampil di beranda dan halaman <a href="donatur.html">Donatur</a>.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <p class="dapur-ringkas" id="dapur-ringkas">Memuat ringkasan&hellip;</p>
+
+      <div class="dapur-grid">
+        <form class="card bukti-card" id="form-pengaturan" novalidate>
+          <h2>Target donasi</h2>
+          <div class="bukti-field">
+            <label for="target-donasi">Target donasi (Rp)</label>
+            <input id="target-donasi" name="target" type="number" inputmode="numeric" min="1" step="1000" placeholder="195800000" required />
+          </div>
+          <div class="bukti-field">
+            <label for="donasi-awal">Terkumpul di luar daftar donatur (Rp)</label>
+            <input id="donasi-awal" name="donasiAwal" type="number" inputmode="numeric" min="0" step="1000" placeholder="43500000" />
+            <span class="bukti-help">Saldo awal donasi yang tidak dicatat per nama. Total di beranda = angka ini + jumlah semua donatur.</span>
+          </div>
+          <button class="btn btn--coral btn--block" type="submit" id="pengaturan-submit">Simpan target</button>
+          <p class="form-note" id="pengaturan-note" role="status" aria-live="polite"></p>
+        </form>
+
+        <form class="card bukti-card" id="form-donatur" novalidate>
+          <h2 id="donatur-form-title">Tambah donatur</h2>
+          <div class="bukti-field">
+            <label for="donatur-nama">Nama donatur</label>
+            <input id="donatur-nama" name="nama" type="text" autocomplete="off" placeholder="Nama yang boleh tampil" maxlength="80" required />
+          </div>
+          <div class="bukti-field">
+            <label for="donatur-jumlah">Jumlah donasi (Rp)</label>
+            <input id="donatur-jumlah" name="jumlah" type="number" inputmode="numeric" min="0" step="1000" placeholder="Contoh: 500000" />
+          </div>
+          <div class="bukti-field">
+            <label for="donatur-pesan">Pesan <span class="bukti-help">(opsional)</span></label>
+            <textarea id="donatur-pesan" name="pesan" rows="3" maxlength="500" placeholder="Pesan yang dititipkan untuk anak-anak"></textarea>
+          </div>
+          <button class="btn btn--coral btn--block" type="submit" id="donatur-submit">Simpan donatur</button>
+          <button class="btn btn--ghost btn--block" type="button" id="donatur-cancel" hidden>Batal edit</button>
+          <p class="form-note" id="donatur-note" role="status" aria-live="polite"></p>
+        </form>
+      </div>
+
+      <div class="dapur-list-head">
+        <h2>Data donatur</h2>
+        <button class="btn btn--sun btn--sm" type="button" id="dapur-refresh">Muat ulang</button>
+      </div>
+      <div class="dapur-list" id="dapur-list" aria-live="polite"></div>
+      <p class="card bukti-empty" id="dapur-empty" hidden>Belum ada donatur yang dicatat.</p>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap footer-inner">
+    <div class="footer-brand">
+      <a class="brand brand--footer" href="index.html" aria-label="201FUL LP201 AsiaWorks, ke beranda">
+        <img class="brand-logo" src="images/logolp201-mark.png" alt="201Ful — One Team, One Heart, One Love" width="2752" height="1536" />
+      </a>
+      <p>One team, one heart, one love.</p>
+    </div>
+
+    <nav class="footer-nav" aria-label="Navigasi footer">
+      <h3>Jelajahi</h3>
+      <a href="index.html#tentang">Tentang Kami</a>
+      <a href="index.html#acara">Acara</a>
+      <a href="index.html#relawan">Relawan</a>
+      <a href="index.html#legacy">Legacy</a>
+      <a href="index.html#donasi">Donasi</a>
+      <a href="donatur.html">Donatur</a>
+      <a href="tim.html">Tim</a>
+    </nav>
+
+    <div class="footer-news">
+      <h3>Terhubung</h3>
+      <p>Ikuti keseharian tim kami di Instagram.</p>
+      <div class="socials">
+        <a href="https://www.instagram.com/201ful/" target="_blank" rel="noopener" aria-label="Instagram 201FUL">Instagram</a>
+      </div>
+    </div>
+  </div>
+  <div class="wrap footer-bottom">
+    <p>&copy; 2026 LP201 &middot; 201FUL. One team, one heart, one love.</p>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+<script src="donasi.js"></script>
+</body>
+</html>

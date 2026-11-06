@@ -40,6 +40,34 @@ const pool = mysql.createPool({
   supportBigNumbers: true
 });
 
+/* Error koneksi yang wajar terjadi sesaat (mis. MySQL restart) -> dicoba ulang. */
+const TRANSIENT_DB_CODES = new Set([
+  "ECONNREFUSED",
+  "ECONNRESET",
+  "ETIMEDOUT",
+  "EPIPE",
+  "EHOSTUNREACH",
+  "PROTOCOL_CONNECTION_LOST",
+  "PROTOCOL_SEQUENCE_TIMEOUT",
+  "ER_CON_COUNT_ERROR",
+  "ER_LOCK_DEADLOCK",
+  "ER_LOCK_WAIT_TIMEOUT"
+]);
+
+async function withDbRetry(operation, attempts = 3) {
+  let lastError;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error;
+      if (!TRANSIENT_DB_CODES.has(error.code) || attempt === attempts) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 120 * attempt));
+    }
+  }
+  throw lastError;
+}
+
 async function ensureDatabase() {
   const connection = await mysql.createConnection({
     host: DB_HOST,
@@ -56,20 +84,43 @@ async function ensureDatabase() {
   }
 }
 
+const SCHEMA_STATEMENTS = [
+  `CREATE TABLE IF NOT EXISTS bukti_transfer (
+    id CHAR(36) NOT NULL PRIMARY KEY,
+    nama VARCHAR(80) NOT NULL,
+    nominal BIGINT UNSIGNED NULL,
+    catatan VARCHAR(300) NULL,
+    mime VARCHAR(40) NOT NULL,
+    size INT UNSIGNED NOT NULL,
+    file_data MEDIUMBLOB NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    KEY idx_created_at (created_at)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+  `CREATE TABLE IF NOT EXISTS donatur (
+    id CHAR(36) NOT NULL PRIMARY KEY,
+    nama VARCHAR(80) NOT NULL,
+    jumlah BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    pesan VARCHAR(500) NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    KEY idx_donatur_created (created_at)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+  `CREATE TABLE IF NOT EXISTS pengaturan (
+    nama VARCHAR(50) NOT NULL PRIMARY KEY,
+    nilai VARCHAR(255) NOT NULL,
+    diperbarui DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
+];
+
 async function ensureSchema() {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS bukti_transfer (
-      id CHAR(36) NOT NULL PRIMARY KEY,
-      nama VARCHAR(80) NOT NULL,
-      nominal BIGINT UNSIGNED NULL,
-      catatan VARCHAR(300) NULL,
-      mime VARCHAR(40) NOT NULL,
-      size INT UNSIGNED NOT NULL,
-      file_data MEDIUMBLOB NOT NULL,
-      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      KEY idx_created_at (created_at)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  `);
+  for (const statement of SCHEMA_STATEMENTS) {
+    await withDbRetry(() => pool.query(statement));
+  }
+
+  await withDbRetry(() =>
+    pool.query(
+      "INSERT INTO pengaturan (nama, nilai) VALUES ('target_donasi', '195800000'), ('donasi_awal', '43500000') ON DUPLICATE KEY UPDATE nama = nama"
+    )
+  );
 }
 
 const MIME = {
@@ -200,14 +251,37 @@ function sendJson(req, res, status, payload, startedAt) {
 }
 
 function databaseError(req, res, error, startedAt) {
-  console.error(`[201ful] MySQL error: ${error.message}`);
-  sendJson(
-    req,
-    res,
-    503,
-    { ok: false, error: "Layanan database sedang tidak tersedia. Coba lagi sebentar." },
-    startedAt
-  );
+  const code = error && error.code ? error.code : "UNKNOWN";
+  console.error(`[201ful] MySQL error (${code}): ${error && error.message}`);
+
+  if (TRANSIENT_DB_CODES.has(code) || code === "PROTOCOL_CONNECTION_LOST") {
+    sendJson(
+      req,
+      res,
+      503,
+      { ok: false, error: "Database sedang sibuk atau baru tersambung ulang. Coba kirim sekali lagi." },
+      startedAt
+    );
+    return;
+  }
+
+  sendJson(req, res, 500, { ok: false, error: "Bukti transfer gagal diproses. Coba lagi." }, startedAt);
+}
+
+async function handleHealth(req, res, startedAt) {
+  try {
+    const [rows] = await pool.query("SELECT 1 AS ok");
+    sendJson(
+      req,
+      res,
+      200,
+      { ok: true, database: DB_NAME, db: rows[0].ok === 1, time: new Date().toISOString() },
+      startedAt
+    );
+  } catch (error) {
+    console.error(`[201ful] health DB error (${error.code || "UNKNOWN"}): ${error.message}`);
+    sendJson(req, res, 503, { ok: false, database: DB_NAME, db: false }, startedAt);
+  }
 }
 
 function cleanText(value, maxLength) {
@@ -272,17 +346,19 @@ function readRequestBody(req, limit) {
   return new Promise((resolve, reject) => {
     const chunks = [];
     let size = 0;
-    req.on("data", (chunk) => {
+    const onData = (chunk) => {
       size += chunk.length;
       if (size > limit) {
         const error = new Error("Body terlalu besar");
         error.code = "TOO_LARGE";
+        req.removeListener("data", onData);
+        req.resume(); // buang sisa body supaya respons tetap terkirim
         reject(error);
-        req.destroy();
         return;
       }
       chunks.push(chunk);
-    });
+    };
+    req.on("data", onData);
     req.on("end", () => resolve(Buffer.concat(chunks)));
     req.on("error", reject);
   });
@@ -297,12 +373,31 @@ async function handleUpload(req, res, startedAt) {
     return;
   }
 
+  const declaredLength = Number(req.headers["content-length"] || 0);
+  if (declaredLength && declaredLength > MAX_BODY_BYTES) {
+    sendJson(
+      req,
+      res,
+      413,
+      { ok: false, error: "Ukuran gambar maksimal 8 MB. Kecilkan dulu fotonya, lalu kirim lagi." },
+      startedAt
+    );
+    req.resume();
+    return;
+  }
+
   let body;
   try {
     body = await readRequestBody(req, MAX_BODY_BYTES);
   } catch (error) {
     if (error && error.code === "TOO_LARGE") {
-      sendJson(req, res, 413, { ok: false, error: "Ukuran gambar maksimal 8 MB." }, startedAt);
+      sendJson(
+        req,
+        res,
+        413,
+        { ok: false, error: "Ukuran gambar maksimal 8 MB. Kecilkan dulu fotonya, lalu kirim lagi." },
+        startedAt
+      );
       return;
     }
     sendJson(req, res, 400, { ok: false, error: "Kiriman gagal dibaca, coba lagi." }, startedAt);
@@ -339,17 +434,19 @@ async function handleUpload(req, res, startedAt) {
   const catatan = cleanText(fields.catatan, 300);
   const id = randomUUID();
 
-  await pool.execute(
-    "INSERT INTO bukti_transfer (id, nama, nominal, catatan, mime, size, file_data, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP())",
-    [
-      id,
-      nama,
-      nominal ? Number(nominal) : null,
-      catatan || null,
-      detected.mime,
-      file.body.length,
-      file.body
-    ]
+  await withDbRetry(() =>
+    pool.execute(
+      "INSERT INTO bukti_transfer (id, nama, nominal, catatan, mime, size, file_data, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP())",
+      [
+        id,
+        nama,
+        nominal ? Number(nominal) : null,
+        catatan || null,
+        detected.mime,
+        file.body.length,
+        file.body
+      ]
+    )
   );
 
   sendJson(req, res, 201, { ok: true, id, message: "Bukti transfer diterima." }, startedAt);
@@ -361,9 +458,8 @@ async function serveBuktiFile(req, res, id, startedAt) {
     return;
   }
 
-  const [rows] = await pool.execute(
-    "SELECT mime, file_data FROM bukti_transfer WHERE id = ? LIMIT 1",
-    [id]
+  const [rows] = await withDbRetry(() =>
+    pool.execute("SELECT mime, file_data FROM bukti_transfer WHERE id = ? LIMIT 1", [id])
   );
 
   if (!rows.length) {
@@ -393,8 +489,10 @@ async function serveBuktiFile(req, res, id, startedAt) {
 
 async function listBukti(req, res, startedAt) {
   const filePrefix = "/api/bukti-transfer/file/";
-  const [rows] = await pool.query(
-    "SELECT id, nama, nominal, catatan, mime, size, DATE_FORMAT(created_at, '%Y-%m-%dT%H:%i:%s.000Z') AS created_at FROM bukti_transfer ORDER BY created_at DESC, id DESC"
+  const [rows] = await withDbRetry(() =>
+    pool.query(
+      "SELECT id, nama, nominal, catatan, mime, size, DATE_FORMAT(created_at, '%Y-%m-%dT%H:%i:%s.000Z') AS created_at FROM bukti_transfer ORDER BY created_at DESC, id DESC"
+    )
   );
 
   const items = rows.map((row) => ({
@@ -453,9 +551,251 @@ function handleBuktiRoute(req, res, pathname, startedAt) {
   sendJson(req, res, 404, { ok: false, error: "Endpoint tidak ditemukan." }, startedAt);
 }
 
+/* ---------------- Donatur & pengaturan donasi ---------------- */
+
+async function readJsonBody(req, limit = 64 * 1024) {
+  const raw = await readRequestBody(req, limit);
+  if (!raw.length) return {};
+  try {
+    const parsed = JSON.parse(raw.toString("utf8"));
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    const error = new Error("JSON tidak valid");
+    error.code = "BAD_JSON";
+    throw error;
+  }
+}
+
+function normaliseJumlah(value) {
+  const digits = String(value === undefined || value === null ? "" : value)
+    .replace(/[^0-9]/g, "")
+    .slice(0, 12);
+  return digits ? Number(digits) : 0;
+}
+
+async function readDonasiSettings() {
+  const [rows] = await withDbRetry(() => pool.query("SELECT nama, nilai FROM pengaturan"));
+  const map = new Map(rows.map((row) => [row.nama, row.nilai]));
+  const target = Number(map.get("target_donasi") || 0);
+  const donasiAwal = Number(map.get("donasi_awal") || 0);
+  const [sumRows] = await withDbRetry(() =>
+    pool.query("SELECT COALESCE(SUM(jumlah), 0) AS total, COUNT(*) AS banyak FROM donatur")
+  );
+  const totalDonatur = Number(sumRows[0].total || 0);
+  const terkumpul = donasiAwal + totalDonatur;
+
+  return {
+    target,
+    donasiAwal,
+    totalDonatur,
+    terkumpul,
+    persen: target > 0 ? Math.min(100, Math.round((terkumpul / target) * 100)) : 0
+  };
+}
+
+async function listDonatur(req, res, startedAt) {
+  const ringkasan = await readDonasiSettings();
+  const [rows] = await withDbRetry(() =>
+    pool.query(
+      "SELECT id, nama, jumlah, pesan, DATE_FORMAT(created_at, '%Y-%m-%dT%H:%i:%s.000Z') AS created_at FROM donatur ORDER BY created_at DESC, id DESC"
+    )
+  );
+
+  const items = rows.map((row) => ({
+    id: row.id,
+    nama: row.nama,
+    jumlah: String(row.jumlah || 0),
+    pesan: row.pesan || "",
+    at: row.created_at
+  }));
+
+  sendJson(req, res, 200, { ok: true, ...ringkasan, count: items.length, items }, startedAt);
+}
+
+async function createDonatur(req, res, startedAt) {
+  let body;
+  try {
+    body = await readJsonBody(req);
+  } catch {
+    sendJson(req, res, 400, { ok: false, error: "Data yang dikirim tidak valid." }, startedAt);
+    return;
+  }
+
+  const nama = cleanText(body.nama, 80);
+  if (!nama) {
+    sendJson(req, res, 400, { ok: false, error: "Nama donatur wajib diisi." }, startedAt);
+    return;
+  }
+
+  const jumlah = normaliseJumlah(body.jumlah);
+  const pesan = cleanText(body.pesan, 500);
+  const id = randomUUID();
+
+  await withDbRetry(() =>
+    pool.execute(
+      "INSERT INTO donatur (id, nama, jumlah, pesan, created_at) VALUES (?, ?, ?, ?, UTC_TIMESTAMP())",
+      [id, nama, jumlah, pesan || null]
+    )
+  );
+
+  sendJson(req, res, 201, { ok: true, id }, startedAt);
+}
+
+async function updateDonatur(req, res, id, startedAt) {
+  let body;
+  try {
+    body = await readJsonBody(req);
+  } catch {
+    sendJson(req, res, 400, { ok: false, error: "Data yang dikirim tidak valid." }, startedAt);
+    return;
+  }
+
+  const nama = cleanText(body.nama, 80);
+  if (!nama) {
+    sendJson(req, res, 400, { ok: false, error: "Nama donatur wajib diisi." }, startedAt);
+    return;
+  }
+
+  const jumlah = normaliseJumlah(body.jumlah);
+  const pesan = cleanText(body.pesan, 500);
+
+  const [result] = await withDbRetry(() =>
+    pool.execute("UPDATE donatur SET nama = ?, jumlah = ?, pesan = ? WHERE id = ?", [
+      nama,
+      jumlah,
+      pesan || null,
+      id
+    ])
+  );
+
+  if (!result.affectedRows) {
+    sendJson(req, res, 404, { ok: false, error: "Donatur tidak ditemukan." }, startedAt);
+    return;
+  }
+
+  sendJson(req, res, 200, { ok: true, id }, startedAt);
+}
+
+async function deleteDonatur(req, res, id, startedAt) {
+  const [result] = await withDbRetry(() => pool.execute("DELETE FROM donatur WHERE id = ?", [id]));
+
+  if (!result.affectedRows) {
+    sendJson(req, res, 404, { ok: false, error: "Donatur tidak ditemukan." }, startedAt);
+    return;
+  }
+
+  sendJson(req, res, 200, { ok: true }, startedAt);
+}
+
+async function updatePengaturan(req, res, startedAt) {
+  let body;
+  try {
+    body = await readJsonBody(req);
+  } catch {
+    sendJson(req, res, 400, { ok: false, error: "Data yang dikirim tidak valid." }, startedAt);
+    return;
+  }
+
+  const target = normaliseJumlah(body.target);
+  const donasiAwal = normaliseJumlah(body.donasiAwal);
+
+  if (!target) {
+    sendJson(req, res, 400, { ok: false, error: "Target donasi harus lebih dari 0." }, startedAt);
+    return;
+  }
+
+  await withDbRetry(() =>
+    pool.query(
+      "INSERT INTO pengaturan (nama, nilai) VALUES ('target_donasi', ?), ('donasi_awal', ?) ON DUPLICATE KEY UPDATE nilai = VALUES(nilai), diperbarui = UTC_TIMESTAMP()",
+      [String(target), String(donasiAwal)]
+    )
+  );
+
+  const ringkasan = await readDonasiSettings();
+  sendJson(req, res, 200, { ok: true, ...ringkasan }, startedAt);
+}
+
+function methodNotAllowed(res, allow) {
+  res.writeHead(405, {
+    ...NO_CACHE_HEADERS,
+    Allow: allow,
+    "Content-Type": "text/plain; charset=utf-8"
+  });
+  res.end("Method Not Allowed");
+}
+
+function handleDonasiRoute(req, res, pathname, startedAt) {
+  const itemPrefix = "/api/donatur/";
+
+  if (pathname === "/api/donatur") {
+    if (req.method === "POST") {
+      createDonatur(req, res, startedAt).catch((error) => databaseError(req, res, error, startedAt));
+      return;
+    }
+    if (req.method === "GET" || req.method === "HEAD") {
+      listDonatur(req, res, startedAt).catch((error) => databaseError(req, res, error, startedAt));
+      return;
+    }
+    methodNotAllowed(res, "GET, HEAD, POST");
+    log(req, 405, startedAt);
+    return;
+  }
+
+  if (pathname.startsWith(itemPrefix)) {
+    const id = pathname.slice(itemPrefix.length);
+    if (!/^[0-9a-fA-F-]{36}$/.test(id)) {
+      sendJson(req, res, 404, { ok: false, error: "Donatur tidak ditemukan." }, startedAt);
+      return;
+    }
+    if (req.method === "PUT" || req.method === "PATCH") {
+      updateDonatur(req, res, id, startedAt).catch((error) => databaseError(req, res, error, startedAt));
+      return;
+    }
+    if (req.method === "DELETE") {
+      deleteDonatur(req, res, id, startedAt).catch((error) => databaseError(req, res, error, startedAt));
+      return;
+    }
+    methodNotAllowed(res, "PUT, PATCH, DELETE");
+    log(req, 405, startedAt);
+    return;
+  }
+
+  if (pathname === "/api/pengaturan") {
+    if (req.method === "PUT" || req.method === "POST") {
+      updatePengaturan(req, res, startedAt).catch((error) => databaseError(req, res, error, startedAt));
+      return;
+    }
+    if (req.method === "GET" || req.method === "HEAD") {
+      readDonasiSettings()
+        .then((ringkasan) => sendJson(req, res, 200, { ok: true, ...ringkasan }, startedAt))
+        .catch((error) => databaseError(req, res, error, startedAt));
+      return;
+    }
+    methodNotAllowed(res, "GET, HEAD, PUT, POST");
+    log(req, 405, startedAt);
+    return;
+  }
+
+  sendJson(req, res, 404, { ok: false, error: "Endpoint tidak ditemukan." }, startedAt);
+}
+
 const server = http.createServer((req, res) => {
   const startedAt = Date.now();
   const pathname = safePathname(req.url);
+
+  if (pathname === "/api/health") {
+    handleHealth(req, res, startedAt);
+    return;
+  }
+
+  if (
+    pathname === "/api/donatur" ||
+    pathname.startsWith("/api/donatur/") ||
+    pathname === "/api/pengaturan"
+  ) {
+    handleDonasiRoute(req, res, pathname, startedAt);
+    return;
+  }
 
   if (pathname === "/api/bukti-transfer" || pathname.startsWith("/api/bukti-transfer/")) {
     handleBuktiRoute(req, res, pathname, startedAt);

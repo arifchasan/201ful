@@ -143,7 +143,12 @@
           }
         })
         .catch(function (error) {
-          setNote(error.message || "Bukti gagal dikirim. Coba lagi ya.", "error");
+          var message = (error && error.message) || "";
+          if (/failed to fetch|networkerror|load failed|network request failed/i.test(message)) {
+            message =
+              "Koneksi terputus saat mengunggah. Pastikan foto tidak lebih dari 8 MB, lalu kirim lagi.";
+          }
+          setNote(message || "Bukti gagal dikirim. Coba lagi ya.", "error");
         })
         .then(function () {
           submit.disabled = false;
