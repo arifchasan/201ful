@@ -11,7 +11,7 @@
 const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
-const { randomUUID } = require("node:crypto");
+const { randomUUID, createHmac, timingSafeEqual } = require("node:crypto");
 const mysql = require("mysql2/promise");
 
 const ROOT = __dirname;
@@ -23,6 +23,13 @@ const DB_PORT = Number(process.env.DB_PORT) || 3306;
 const DB_USER = process.env.DB_USER || "root";
 const DB_PASSWORD = process.env.DB_PASSWORD || "";
 const DB_NAME = /^[A-Za-z0-9_]+$/.test(process.env.DB_NAME || "") ? process.env.DB_NAME : "201ful";
+
+const DAPUR_PASSWORD = process.env.DAPUR_PASSWORD || "OneHeart";
+const DAPUR_COOKIE = "dapur_session";
+const DAPUR_SESSION_MAX_AGE = 8 * 60 * 60;
+const DAPUR_TOKEN = createHmac("sha256", "201ful-dapur-session")
+  .update(DAPUR_PASSWORD)
+  .digest("hex");
 
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 const MAX_BODY_BYTES = MAX_IMAGE_BYTES + 512 * 1024;
@@ -184,6 +191,39 @@ const NOT_FOUND_BODY = `<!doctype html>
 function log(req, status, startedAt) {
   const ms = Date.now() - startedAt;
   console.log(`${req.method} ${req.url} ${status} ${ms}ms`);
+}
+
+const DAPUR_PAGES = new Set(["/dapur-lp201", "/dapur-lp201.html"]);
+
+function serveStaticFile(req, res, filePath, startedAt) {
+  fs.stat(filePath, (error, stat) => {
+    if (error || !stat.isFile()) {
+      notFound(req, res, startedAt);
+      return;
+    }
+
+    const type = MIME[path.extname(filePath).toLowerCase()] || "application/octet-stream";
+    res.writeHead(200, {
+      ...NO_CACHE_HEADERS,
+      "Content-Type": type,
+      "Content-Length": stat.size
+    });
+
+    if (req.method === "HEAD") {
+      res.end();
+      log(req, 200, startedAt);
+      return;
+    }
+
+    const stream = fs.createReadStream(filePath);
+    stream.on("error", () => {
+      res.destroy();
+      log(req, 500, startedAt);
+    });
+    res.on("close", () => stream.destroy());
+    res.on("finish", () => log(req, 200, startedAt));
+    stream.pipe(res);
+  });
 }
 
 function notFound(req, res, startedAt) {
@@ -724,11 +764,103 @@ function methodNotAllowed(res, allow) {
   res.end("Method Not Allowed");
 }
 
+/* ---------------- Gerbang kata sandi halaman dapur ---------------- */
+
+function readCookie(req, name) {
+  const raw = String(req.headers.cookie || "");
+  for (const part of raw.split(";")) {
+    const separator = part.indexOf("=");
+    if (separator === -1) continue;
+    if (part.slice(0, separator).trim() === name) {
+      try {
+        return decodeURIComponent(part.slice(separator + 1).trim());
+      } catch {
+        return "";
+      }
+    }
+  }
+  return "";
+}
+
+function sameSecret(a, b) {
+  const left = Buffer.from(String(a), "utf8");
+  const right = Buffer.from(String(b), "utf8");
+  if (left.length !== right.length) return false;
+  return timingSafeEqual(left, right);
+}
+
+function isDapurAuthed(req) {
+  const value = readCookie(req, DAPUR_COOKIE);
+  return Boolean(value) && sameSecret(value, DAPUR_TOKEN);
+}
+
+function requireDapur(req, res, startedAt) {
+  if (isDapurAuthed(req)) return true;
+  sendJson(req, res, 401, { ok: false, error: "Halaman dapur terkunci. Isi kata sandi dulu." }, startedAt);
+  return false;
+}
+
+async function handleDapurAuth(req, res, pathname, startedAt) {
+  if (pathname === "/api/dapur/session") {
+    if (req.method !== "GET" && req.method !== "HEAD") {
+      methodNotAllowed(res, "GET, HEAD");
+      log(req, 405, startedAt);
+      return;
+    }
+    sendJson(req, res, 200, { ok: true, auth: isDapurAuthed(req) }, startedAt);
+    return;
+  }
+
+  if (pathname === "/api/dapur/login") {
+    if (req.method !== "POST") {
+      methodNotAllowed(res, "POST");
+      log(req, 405, startedAt);
+      return;
+    }
+
+    let body;
+    try {
+      body = await readJsonBody(req);
+    } catch {
+      sendJson(req, res, 400, { ok: false, error: "Data yang dikirim tidak valid." }, startedAt);
+      return;
+    }
+
+    const password = String(body.password === undefined || body.password === null ? "" : body.password);
+    if (!password || !sameSecret(password, DAPUR_PASSWORD)) {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      sendJson(req, res, 401, { ok: false, error: "Kata sandi salah. Coba lagi." }, startedAt);
+      return;
+    }
+
+    res.setHeader(
+      "Set-Cookie",
+      `${DAPUR_COOKIE}=${DAPUR_TOKEN}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${DAPUR_SESSION_MAX_AGE}`
+    );
+    sendJson(req, res, 200, { ok: true, auth: true }, startedAt);
+    return;
+  }
+
+  if (pathname === "/api/dapur/logout") {
+    if (req.method !== "POST") {
+      methodNotAllowed(res, "POST");
+      log(req, 405, startedAt);
+      return;
+    }
+    res.setHeader("Set-Cookie", `${DAPUR_COOKIE}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0`);
+    sendJson(req, res, 200, { ok: true }, startedAt);
+    return;
+  }
+
+  sendJson(req, res, 404, { ok: false, error: "Endpoint tidak ditemukan." }, startedAt);
+}
+
 function handleDonasiRoute(req, res, pathname, startedAt) {
   const itemPrefix = "/api/donatur/";
 
   if (pathname === "/api/donatur") {
     if (req.method === "POST") {
+      if (!requireDapur(req, res, startedAt)) return;
       createDonatur(req, res, startedAt).catch((error) => databaseError(req, res, error, startedAt));
       return;
     }
@@ -748,10 +880,12 @@ function handleDonasiRoute(req, res, pathname, startedAt) {
       return;
     }
     if (req.method === "PUT" || req.method === "PATCH") {
+      if (!requireDapur(req, res, startedAt)) return;
       updateDonatur(req, res, id, startedAt).catch((error) => databaseError(req, res, error, startedAt));
       return;
     }
     if (req.method === "DELETE") {
+      if (!requireDapur(req, res, startedAt)) return;
       deleteDonatur(req, res, id, startedAt).catch((error) => databaseError(req, res, error, startedAt));
       return;
     }
@@ -762,6 +896,7 @@ function handleDonasiRoute(req, res, pathname, startedAt) {
 
   if (pathname === "/api/pengaturan") {
     if (req.method === "PUT" || req.method === "POST") {
+      if (!requireDapur(req, res, startedAt)) return;
       updatePengaturan(req, res, startedAt).catch((error) => databaseError(req, res, error, startedAt));
       return;
     }
@@ -785,6 +920,11 @@ const server = http.createServer((req, res) => {
 
   if (pathname === "/api/health") {
     handleHealth(req, res, startedAt);
+    return;
+  }
+
+  if (pathname.startsWith("/api/dapur/")) {
+    handleDapurAuth(req, res, pathname, startedAt).catch((error) => databaseError(req, res, error, startedAt));
     return;
   }
 
@@ -818,40 +958,27 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  const normalizedPath = pathname.length > 1 && pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
+
+  if (normalizedPath === "/dapur-lp201/donatur") {
+    res.writeHead(302, { ...NO_CACHE_HEADERS, Location: "/dapur-lp201" });
+    res.end();
+    log(req, 302, startedAt);
+    return;
+  }
+
+  if (DAPUR_PAGES.has(normalizedPath) && !isDapurAuthed(req)) {
+    serveStaticFile(req, res, path.join(ROOT, "dapur-login.html"), startedAt);
+    return;
+  }
+
   const filePath = resolveFile(req.url || "/");
   if (!filePath) {
     notFound(req, res, startedAt);
     return;
   }
 
-  fs.stat(filePath, (error, stat) => {
-    if (error || !stat.isFile()) {
-      notFound(req, res, startedAt);
-      return;
-    }
-
-    const type = MIME[path.extname(filePath).toLowerCase()] || "application/octet-stream";
-    res.writeHead(200, {
-      ...NO_CACHE_HEADERS,
-      "Content-Type": type,
-      "Content-Length": stat.size
-    });
-
-    if (req.method === "HEAD") {
-      res.end();
-      log(req, 200, startedAt);
-      return;
-    }
-
-    const stream = fs.createReadStream(filePath);
-    stream.on("error", () => {
-      res.destroy();
-      log(req, 500, startedAt);
-    });
-    res.on("close", () => stream.destroy());
-    res.on("finish", () => log(req, 200, startedAt));
-    stream.pipe(res);
-  });
+  serveStaticFile(req, res, filePath, startedAt);
 });
 
 server.on("error", (error) => {

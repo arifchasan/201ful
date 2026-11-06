@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Masuk Dapur LP201</title>
+<meta name="description" content="Halaman masuk internal Dapur LP201." />
+<meta name="theme-color" content="#0A3876" />
+<meta name="robots" content="noindex, nofollow" />
+<link rel="icon" href="images/logolp201-mark.png" type="image/png" />
+<link rel="apple-touch-icon" href="images/logolp201-mark.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<a class="skip-link" href="#konten">Lewati ke konten</a>
+
+<header class="site-header" id="site-header">
+  <div class="wrap header-inner">
+    <a class="brand" href="index.html" aria-label="201FUL LP201 AsiaWorks, ke beranda">
+      <img class="brand-logo" src="images/logolp201-mark.png" alt="201Ful — One Team, One Heart, One Love" width="2752" height="1536" />
+    </a>
+
+    <nav class="nav" id="primary-nav" aria-label="Navigasi utama">
+      <a href="index.html#tentang">Tentang Kami</a>
+      <a href="index.html#acara">Acara</a>
+      <a href="index.html#relawan">Relawan</a>
+      <a href="index.html#legacy">Legacy</a>
+      <a href="index.html#donasi">Donasi</a>
+      <a href="donatur.html">Donatur</a>
+      <a href="tim.html">Tim</a>
+      <a class="btn btn--sm btn--coral nav-cta" href="index.html#donasi">Donasi</a>
+    </nav>
+
+    <button class="nav-toggle" id="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" aria-label="Buka menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</header>
+
+<main id="konten" class="dapur-login-wrap">
+  <form class="card bukti-card dapur-login" id="form-login" novalidate>
+    <p class="eyebrow eyebrow--sun">Khusus panitia</p>
+    <h1>Dapur LP201</h1>
+    <p class="small-note">Masukkan kata sandi untuk membuka target donasi dan data donatur.</p>
+    <div class="bukti-field">
+      <label for="dapur-password">Kata sandi</label>
+      <input id="dapur-password" name="password" type="password" autocomplete="current-password" autofocus required />
+    </div>
+    <button class="btn btn--coral btn--block" type="submit" id="login-submit">Buka dapur</button>
+    <p class="form-note" id="login-note" role="status" aria-live="polite"></p>
+    <p class="small-note"><a href="/">Kembali ke beranda</a></p>
+  </form>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap footer-bottom">
+    <p>&copy; 2026 LP201 &middot; 201FUL. One team, one heart, one love.</p>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+<script>
+  (function () {
+    var form = document.getElementById("form-login");
+    var input = document.getElementById("dapur-password");
+    var note = document.getElementById("login-note");
+    var submit = document.getElementById("login-submit");
+
+    form.addEventListener("submit", function (event) {
+      event.preventDefault();
+      var password = input.value;
+      if (!password) {
+        note.textContent = "Kata sandi belum diisi.";
+        note.dataset.state = "error";
+        input.focus();
+        return;
+      }
+
+      submit.disabled = true;
+      note.textContent = "Memeriksa…";
+      delete note.dataset.state;
+
+      fetch("/api/dapur/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: password })
+      })
+        .then(function (response) {
+          return response.json().then(function (body) {
+            return { ok: response.ok, payload: body };
+          });
+        })
+        .then(function (result) {
+          if (!result.ok || !result.payload.ok) {
+            throw new Error(result.payload.error || "Kata sandi salah.");
+          }
+          note.textContent = "Berhasil. Membuka halaman…";
+          note.dataset.state = "success";
+          window.location.reload();
+        })
+        .catch(function (error) {
+          note.textContent = error.message || "Kata sandi salah. Coba lagi.";
+          note.dataset.state = "error";
+          input.select();
+        })
+        .then(function () {
+          submit.disabled = false;
+        });
+    });
+  })();
+</script>
+</body>
+</html>

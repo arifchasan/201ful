@@ -45,7 +45,10 @@
     <div class="wrap">
       <p class="eyebrow eyebrow--sun">Internal &middot; Finance</p>
       <h1>Dapur <span class="hl">LP201</span>.</h1>
-      <p class="lead">Atur target donasi, catat donasi yang sudah masuk di luar daftar nama, dan isi data donatur. Perubahan langsung tampil di beranda dan halaman <a href="donatur.html">Donatur</a>.</p>
+      <p class="lead">Atur target donasi dan catat donatur di satu halaman. Menambah donatur tidak akan mengubah target yang sudah disimpan.</p>
+      <div class="dapur-links">
+        <button class="btn btn--ghost btn--sm" type="button" id="dapur-logout">Keluar</button>
+      </div>
     </div>
   </section>
 
@@ -53,41 +56,41 @@
     <div class="wrap">
       <p class="dapur-ringkas" id="dapur-ringkas">Memuat ringkasan&hellip;</p>
 
-      <div class="dapur-grid">
-        <form class="card bukti-card" id="form-pengaturan" novalidate>
-          <h2>Target donasi</h2>
-          <div class="bukti-field">
-            <label for="target-donasi">Target donasi (Rp)</label>
-            <input id="target-donasi" name="target" type="number" inputmode="numeric" min="1" step="1000" placeholder="195800000" required />
-          </div>
-          <div class="bukti-field">
-            <label for="donasi-awal">Terkumpul di luar daftar donatur (Rp)</label>
-            <input id="donasi-awal" name="donasiAwal" type="number" inputmode="numeric" min="0" step="1000" placeholder="43500000" />
-            <span class="bukti-help">Saldo awal donasi yang tidak dicatat per nama. Total di beranda = angka ini + jumlah semua donatur.</span>
-          </div>
-          <button class="btn btn--coral btn--block" type="submit" id="pengaturan-submit">Simpan target</button>
-          <p class="form-note" id="pengaturan-note" role="status" aria-live="polite"></p>
-        </form>
+      <form class="card bukti-card dapur-narrow" id="form-pengaturan" novalidate>
+        <h2>Target donasi</h2>
+        <div class="bukti-field">
+          <label for="target-donasi">Target donasi (Rp)</label>
+          <input id="target-donasi" name="target" type="number" inputmode="numeric" min="1" step="1000" placeholder="195800000" required />
+        </div>
+        <div class="bukti-field">
+          <label for="donasi-awal">Terkumpul di luar daftar donatur (Rp)</label>
+          <input id="donasi-awal" name="donasiAwal" type="number" inputmode="numeric" min="0" step="1000" placeholder="43500000" />
+          <span class="bukti-help">Saldo awal donasi yang tidak dicatat per nama. Total di beranda = angka ini + jumlah semua donatur.</span>
+        </div>
+        <button class="btn btn--coral btn--block" type="submit" id="pengaturan-submit">Simpan target</button>
+        <p class="form-note" id="pengaturan-note" role="status" aria-live="polite"></p>
+      </form>
 
-        <form class="card bukti-card" id="form-donatur" novalidate>
-          <h2 id="donatur-form-title">Tambah donatur</h2>
-          <div class="bukti-field">
-            <label for="donatur-nama">Nama donatur</label>
-            <input id="donatur-nama" name="nama" type="text" autocomplete="off" placeholder="Nama yang boleh tampil" maxlength="80" required />
-          </div>
-          <div class="bukti-field">
-            <label for="donatur-jumlah">Jumlah donasi (Rp)</label>
-            <input id="donatur-jumlah" name="jumlah" type="number" inputmode="numeric" min="0" step="1000" placeholder="Contoh: 500000" />
-          </div>
-          <div class="bukti-field">
-            <label for="donatur-pesan">Pesan <span class="bukti-help">(opsional)</span></label>
-            <textarea id="donatur-pesan" name="pesan" rows="3" maxlength="500" placeholder="Pesan yang dititipkan untuk anak-anak"></textarea>
-          </div>
-          <button class="btn btn--coral btn--block" type="submit" id="donatur-submit">Simpan donatur</button>
-          <button class="btn btn--ghost btn--block" type="button" id="donatur-cancel" hidden>Batal edit</button>
-          <p class="form-note" id="donatur-note" role="status" aria-live="polite"></p>
-        </form>
-      </div>
+      <div class="dapur-divider"></div>
+
+      <form class="card bukti-card dapur-narrow" id="form-donatur" novalidate>
+        <h2 id="donatur-form-title">Tambah donatur</h2>
+        <div class="bukti-field">
+          <label for="donatur-nama">Nama donatur</label>
+          <input id="donatur-nama" name="nama" type="text" autocomplete="off" placeholder="Nama yang boleh tampil" maxlength="80" required />
+        </div>
+        <div class="bukti-field">
+          <label for="donatur-jumlah">Jumlah donasi (Rp)</label>
+          <input id="donatur-jumlah" name="jumlah" type="number" inputmode="numeric" min="0" step="1000" placeholder="Contoh: 500000" />
+        </div>
+        <div class="bukti-field">
+          <label for="donatur-pesan">Pesan <span class="bukti-help">(opsional)</span></label>
+          <textarea id="donatur-pesan" name="pesan" rows="3" maxlength="500" placeholder="Pesan yang dititipkan untuk anak-anak"></textarea>
+        </div>
+        <button class="btn btn--coral btn--block" type="submit" id="donatur-submit">Simpan donatur</button>
+        <button class="btn btn--ghost btn--block" type="button" id="donatur-cancel" hidden>Batal edit</button>
+        <p class="form-note" id="donatur-note" role="status" aria-live="polite"></p>
+      </form>
 
       <div class="dapur-list-head">
         <h2>Data donatur</h2>

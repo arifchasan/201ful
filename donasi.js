@@ -27,6 +27,28 @@
     else delete el.dataset.state;
   }
 
+  function sesiHabis(noteEl) {
+    setNote(noteEl, "Kata sandi dapur sudah tidak berlaku. Halaman dimuat ulang supaya bisa masuk lagi.", "error");
+    window.setTimeout(function () {
+      window.location.reload();
+    }, 1500);
+  }
+
+  /* ---------------- Keluar dari dapur ---------------- */
+
+  var tombolKeluar = document.getElementById("dapur-logout");
+
+  if (tombolKeluar) {
+    tombolKeluar.addEventListener("click", function () {
+      tombolKeluar.disabled = true;
+      fetch("/api/dapur/logout", { method: "POST" })
+        .catch(function () {})
+        .then(function () {
+          window.location.href = "/";
+        });
+    });
+  }
+
   /* ---------------- Beranda: angka donasi ---------------- */
 
   var terkumpulEl = document.getElementById("donasi-terkumpul");
@@ -93,21 +115,19 @@
       return card;
     };
 
-    var renderDonatur = function (data) {
-      grid.textContent = "";
-      (data.items || []).forEach(function (item) {
-        grid.appendChild(buatKartu(item));
-      });
-      if (jumlahEl) jumlahEl.textContent = data.count || 0;
-      if (totalEl) totalEl.textContent = formatRupiah(data.terkumpul);
-      if (targetElPage) targetElPage.textContent = formatRupiah(data.target);
-      if (persenElPage) persenElPage.textContent = data.persen + "% dari target";
-      if (barElPage) barElPage.style.width = data.persen + "%";
-      if (kosong) kosong.hidden = (data.items || []).length > 0;
-    };
-
     ambilDonasi()
-      .then(renderDonatur)
+      .then(function (data) {
+        grid.textContent = "";
+        (data.items || []).forEach(function (item) {
+          grid.appendChild(buatKartu(item));
+        });
+        if (jumlahEl) jumlahEl.textContent = data.count || 0;
+        if (totalEl) totalEl.textContent = formatRupiah(data.terkumpul);
+        if (targetElPage) targetElPage.textContent = formatRupiah(data.target);
+        if (persenElPage) persenElPage.textContent = data.persen + "% dari target";
+        if (barElPage) barElPage.style.width = data.persen + "%";
+        if (kosong) kosong.hidden = (data.items || []).length > 0;
+      })
       .catch(function () {
         if (kosong) {
           kosong.textContent = "Gagal memuat daftar donatur. Coba muat ulang halaman.";
@@ -116,7 +136,74 @@
       });
   }
 
-  /* ---------------- Halaman /dapur-lp201 ---------------- */
+  /* ---------------- Dapur LP201: target donasi ---------------- */
+
+  var formPengaturan = document.getElementById("form-pengaturan");
+
+  if (formPengaturan) {
+    var targetInput = document.getElementById("target-donasi");
+    var awalInput = document.getElementById("donasi-awal");
+    var submitPengaturan = document.getElementById("pengaturan-submit");
+    var notePengaturan = document.getElementById("pengaturan-note");
+
+    /* Hanya mengisi isian target dari database; tidak pernah menyimpan
+       apa pun saat donatur ditambah atau diedit. */
+    var renderTarget = function (data) {
+      if (document.activeElement !== targetInput) targetInput.value = data.target || "";
+      if (document.activeElement !== awalInput) awalInput.value = data.donasiAwal || "";
+    };
+
+    var muatTarget = function () {
+      return ambilDonasi()
+        .then(renderTarget)
+        .catch(function () {});
+    };
+
+    formPengaturan.addEventListener("submit", function (event) {
+      event.preventDefault();
+
+      if (!Number(targetInput.value)) {
+        setNote(notePengaturan, "Isi target donasi dulu ya.", "error");
+        targetInput.focus();
+        return;
+      }
+
+      submitPengaturan.disabled = true;
+      setNote(notePengaturan, "Menyimpan…", "");
+
+      fetch("/api/pengaturan", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ target: targetInput.value, donasiAwal: awalInput.value })
+      })
+        .then(function (response) {
+          return response.json().then(function (body) {
+            return { status: response.status, ok: response.ok, payload: body };
+          });
+        })
+        .then(function (result) {
+          if (result.status === 401) {
+            sesiHabis(notePengaturan);
+            return;
+          }
+          if (!result.ok || !result.payload.ok) {
+            throw new Error(result.payload.error || "Gagal menyimpan target.");
+          }
+          setNote(notePengaturan, "Target donasi tersimpan.", "success");
+          return muatTarget();
+        })
+        .catch(function (error) {
+          setNote(notePengaturan, error.message || "Gagal menyimpan target.", "error");
+        })
+        .then(function () {
+          submitPengaturan.disabled = false;
+        });
+    });
+
+    muatTarget();
+  }
+
+  /* ---------------- Dapur LP201: data donatur ---------------- */
 
   var formDonatur = document.getElementById("form-donatur");
 
@@ -130,26 +217,21 @@
     var titleDonatur = document.getElementById("donatur-form-title");
     var listDapur = document.getElementById("dapur-list");
     var emptyDapur = document.getElementById("dapur-empty");
-    var ringkasDapur = document.getElementById("dapur-ringkas");
-    var refreshDapur = document.getElementById("dapur-refresh");
 
-    var formPengaturan = document.getElementById("form-pengaturan");
-    var targetInput = document.getElementById("target-donasi");
-    var awalInput = document.getElementById("donasi-awal");
-    var submitPengaturan = document.getElementById("pengaturan-submit");
-    var notePengaturan = document.getElementById("pengaturan-note");
+    var refreshDapur = document.getElementById("dapur-refresh");
+    var ringkasDapur = document.getElementById("dapur-ringkas");
 
     var editingId = null;
 
-    function resetFormDonatur() {
+    var resetFormDonatur = function () {
       editingId = null;
       formDonatur.reset();
       titleDonatur.textContent = "Tambah donatur";
       submitDonatur.textContent = "Simpan donatur";
       cancelDonatur.hidden = true;
-    }
+    };
 
-    function isiFormDonatur(item) {
+    var isiFormDonatur = function (item) {
       editingId = item.id;
       namaInput.value = item.nama;
       jumlahInput.value = item.jumlah;
@@ -159,9 +241,9 @@
       cancelDonatur.hidden = false;
       setNote(noteDonatur, "Sedang mengedit: " + item.nama, "");
       namaInput.focus();
-    }
+    };
 
-    function buatBaris(item) {
+    var buatBaris = function (item) {
       var row = document.createElement("article");
       row.className = "dapur-item";
 
@@ -212,14 +294,18 @@
         fetch("/api/donatur/" + item.id, { method: "DELETE" })
           .then(function (response) {
             return response.json().then(function (payload) {
-              return { ok: response.ok, payload: payload };
+              return { status: response.status, ok: response.ok, payload: payload };
             });
           })
           .then(function (result) {
+            if (result.status === 401) {
+              sesiHabis(noteDonatur);
+              return;
+            }
             if (!result.ok || !result.payload.ok) throw new Error(result.payload.error || "Gagal menghapus.");
             if (editingId === item.id) resetFormDonatur();
             setNote(noteDonatur, "Donatur dihapus.", "success");
-            muatDapur();
+            return muatDonatur();
           })
           .catch(function (error) {
             setNote(noteDonatur, error.message || "Gagal menghapus donatur.", "error");
@@ -231,9 +317,9 @@
       row.appendChild(actions);
 
       return row;
-    }
+    };
 
-    function renderDapur(data) {
+    var renderDonatur = function (data) {
       listDapur.textContent = "";
       (data.items || []).forEach(function (item) {
         listDapur.appendChild(buatBaris(item));
@@ -241,31 +327,31 @@
       if (emptyDapur) emptyDapur.hidden = (data.items || []).length > 0;
       if (ringkasDapur) {
         ringkasDapur.textContent =
+          (data.count || 0) +
+          " donatur tercatat · total " +
+          formatRupiah(data.totalDonatur) +
+          ". Terkumpul " +
           formatRupiah(data.terkumpul) +
-          " terkumpul dari target " +
+          " dari target " +
           formatRupiah(data.target) +
           " (" +
           data.persen +
-          "%). Di luar daftar nama: " +
-          formatRupiah(data.donasiAwal) +
-          " · total donatur tercatat: " +
-          formatRupiah(data.totalDonatur) +
-          ".";
+          "%). Target tetap " +
+          formatRupiah(data.target) +
+          " sampai diubah di form target.";
       }
-      if (targetInput && document.activeElement !== targetInput) targetInput.value = data.target || "";
-      if (awalInput && document.activeElement !== awalInput) awalInput.value = data.donasiAwal || "";
-    }
+    };
 
-    function muatDapur() {
+    var muatDonatur = function () {
       return ambilDonasi()
-        .then(renderDapur)
+        .then(renderDonatur)
         .catch(function () {
           if (emptyDapur) {
             emptyDapur.textContent = "Gagal memuat data dari database.";
             emptyDapur.hidden = false;
           }
         });
-    }
+    };
 
     formDonatur.addEventListener("submit", function (event) {
       event.preventDefault();
@@ -277,12 +363,6 @@
         return;
       }
 
-      var payload = {
-        nama: nama,
-        jumlah: jumlahInput.value,
-        pesan: pesanInput.value.trim()
-      };
-
       var target = editingId ? "/api/donatur/" + editingId : "/api/donatur";
       var method = editingId ? "PUT" : "POST";
 
@@ -292,14 +372,22 @@
       fetch(target, {
         method: method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({
+          nama: nama,
+          jumlah: jumlahInput.value,
+          pesan: pesanInput.value.trim()
+        })
       })
         .then(function (response) {
           return response.json().then(function (body) {
-            return { ok: response.ok, payload: body };
+            return { status: response.status, ok: response.ok, payload: body };
           });
         })
         .then(function (result) {
+          if (result.status === 401) {
+            sesiHabis(noteDonatur);
+            return;
+          }
           if (!result.ok || !result.payload.ok) {
             throw new Error(result.payload.error || "Gagal menyimpan donatur.");
           }
@@ -309,7 +397,7 @@
             "success"
           );
           resetFormDonatur();
-          return muatDapur();
+          return muatDonatur();
         })
         .catch(function (error) {
           setNote(noteDonatur, error.message || "Gagal menyimpan donatur.", "error");
@@ -324,45 +412,7 @@
       setNote(noteDonatur, "", "");
     });
 
-    formPengaturan.addEventListener("submit", function (event) {
-      event.preventDefault();
-
-      var target = targetInput.value;
-      if (!Number(target)) {
-        setNote(notePengaturan, "Isi target donasi dulu ya.", "error");
-        targetInput.focus();
-        return;
-      }
-
-      submitPengaturan.disabled = true;
-      setNote(notePengaturan, "Menyimpan…", "");
-
-      fetch("/api/pengaturan", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ target: target, donasiAwal: awalInput.value })
-      })
-        .then(function (response) {
-          return response.json().then(function (body) {
-            return { ok: response.ok, payload: body };
-          });
-        })
-        .then(function (result) {
-          if (!result.ok || !result.payload.ok) {
-            throw new Error(result.payload.error || "Gagal menyimpan target.");
-          }
-          setNote(notePengaturan, "Target donasi tersimpan.", "success");
-          return muatDapur();
-        })
-        .catch(function (error) {
-          setNote(notePengaturan, error.message || "Gagal menyimpan target.", "error");
-        })
-        .then(function () {
-          submitPengaturan.disabled = false;
-        });
-    });
-
-    refreshDapur.addEventListener("click", muatDapur);
-    muatDapur();
+    refreshDapur.addEventListener("click", muatDonatur);
+    muatDonatur();
   }
 })();

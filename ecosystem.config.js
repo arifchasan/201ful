@@ -18,7 +18,8 @@ module.exports = {
         DB_PORT: "3306",
         DB_USER: "root",
         DB_PASSWORD: "",
-        DB_NAME: "201ful"
+        DB_NAME: "201ful",
+        DAPUR_PASSWORD: "OneHeart"
       }
     }
   ]
