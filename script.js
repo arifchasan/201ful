@@ -200,23 +200,4 @@
       }
     });
   }
-
-  /* ---------------- Newsletter ---------------- */
-  var newsForm = document.getElementById("news-form");
-  var newsNote = document.getElementById("news-note");
-
-  if (newsForm) {
-    newsForm.addEventListener("submit", function (event) {
-      event.preventDefault();
-      var input = newsForm.querySelector("input");
-      var valid = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(input.value.trim());
-      if (!valid) {
-        newsNote.textContent = "Isi email yang valid dulu ya.";
-        input.focus();
-        return;
-      }
-      newsNote.textContent = "Terima kasih! Kamu masuk daftar kabar WOW DAY.";
-      newsForm.reset();
-    });
-  }
 })();

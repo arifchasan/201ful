@@ -1439,28 +1439,6 @@ textarea {
   color: rgba(255, 255, 255, 0.75);
   margin-bottom: 10px;
 }
-.news-form {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.news-form input {
-  flex: 1 1 160px;
-  min-width: 0;
-  background: rgba(255, 255, 255, 0.08);
-  border: 2.5px solid rgba(255, 255, 255, 0.45);
-  color: var(--cream);
-  border-radius: 999px;
-  padding: 10px 16px;
-  font-size: 0.9rem;
-}
-.news-form input::placeholder {
-  color: rgba(255, 255, 255, 0.45);
-}
-.news-form input:focus {
-  outline: none;
-  border-color: var(--sun);
-}
 .form-note {
   font-size: 0.78rem;
   color: var(--sun);
