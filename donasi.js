@@ -13,6 +13,40 @@
     return tanggal.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
   }
 
+  /* Peringkat donasi terbesar: emas, perak, perunggu. */
+  var PERINGKAT = [
+    { kelas: "emas", label: "Emas" },
+    { kelas: "perak", label: "Perak" },
+    { kelas: "perunggu", label: "Perunggu" }
+  ];
+
+  function buatMahkota(nomor) {
+    var data = PERINGKAT[nomor - 1];
+    if (!data) return null;
+
+    var badge = document.createElement("span");
+    badge.className = "mahkota mahkota--" + data.kelas;
+    badge.setAttribute(
+      "aria-label",
+      "Donasi terbesar peringkat " + nomor + ", medali " + data.label
+    );
+    badge.innerHTML =
+      '<svg class="mahkota-ikon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+      '<path d="M3.2 8.6l4.2 3 4.6-6.4 4.6 6.4 4.2-3-1.6 9a1 1 0 0 1-1 .8H5.8a1 1 0 0 1-1-.8l-1.6-9z" fill="currentColor"/>' +
+      '<circle cx="3" cy="6.6" r="1.8" fill="currentColor"/>' +
+      '<circle cx="21" cy="6.6" r="1.8" fill="currentColor"/>' +
+      '<circle cx="12" cy="3.6" r="1.8" fill="currentColor"/>' +
+      "</svg>";
+
+    return badge;
+  }
+
+  function peringkatDari(item, urutan) {
+    if (urutan > 3) return 0;
+    var jumlah = Number(String(item.jumlah === undefined || item.jumlah === null ? "" : item.jumlah).replace(/\D/g, ""));
+    return jumlah > 0 ? urutan : 0;
+  }
+
   function ambilDonasi() {
     return fetch("/api/donatur", { cache: "no-store" }).then(function (response) {
       if (!response.ok) throw new Error("HTTP " + response.status);
@@ -79,9 +113,15 @@
     var persenElPage = document.getElementById("donatur-persen");
     var barElPage = document.getElementById("donatur-bar");
 
-    var buatKartu = function (item) {
+    var buatKartu = function (item, urutan) {
       var card = document.createElement("article");
       card.className = "card donatur-card";
+
+      var peringkat = peringkatDari(item, urutan);
+      if (peringkat) {
+        card.className += " donatur-card--juara donatur-card--" + PERINGKAT[peringkat - 1].kelas;
+        card.appendChild(buatMahkota(peringkat));
+      }
 
       var head = document.createElement("div");
       head.className = "donatur-head";
@@ -118,8 +158,8 @@
     ambilDonasi()
       .then(function (data) {
         grid.textContent = "";
-        (data.items || []).forEach(function (item) {
-          grid.appendChild(buatKartu(item));
+        (data.items || []).forEach(function (item, index) {
+          grid.appendChild(buatKartu(item, index + 1));
         });
         if (jumlahEl) jumlahEl.textContent = data.count || 0;
         if (totalEl) totalEl.textContent = formatRupiah(data.terkumpul);
@@ -243,9 +283,15 @@
       namaInput.focus();
     };
 
-    var buatBaris = function (item) {
+    var buatBaris = function (item, urutan) {
       var row = document.createElement("article");
       row.className = "dapur-item";
+
+      var peringkat = peringkatDari(item, urutan);
+      if (peringkat) {
+        row.className += " dapur-item--juara dapur-item--" + PERINGKAT[peringkat - 1].kelas;
+        row.appendChild(buatMahkota(peringkat));
+      }
 
       var top = document.createElement("div");
       top.className = "dapur-item-top";
@@ -321,8 +367,8 @@
 
     var renderDonatur = function (data) {
       listDapur.textContent = "";
-      (data.items || []).forEach(function (item) {
-        listDapur.appendChild(buatBaris(item));
+      (data.items || []).forEach(function (item, index) {
+        listDapur.appendChild(buatBaris(item, index + 1));
       });
       if (emptyDapur) emptyDapur.hidden = (data.items || []).length > 0;
       if (ringkasDapur) {

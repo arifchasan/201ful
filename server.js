@@ -637,7 +637,7 @@ async function listDonatur(req, res, startedAt) {
   const ringkasan = await readDonasiSettings();
   const [rows] = await withDbRetry(() =>
     pool.query(
-      "SELECT id, nama, jumlah, pesan, DATE_FORMAT(created_at, '%Y-%m-%dT%H:%i:%s.000Z') AS created_at FROM donatur ORDER BY created_at DESC, id DESC"
+      "SELECT id, nama, jumlah, pesan, DATE_FORMAT(created_at, '%Y-%m-%dT%H:%i:%s.000Z') AS created_at FROM donatur ORDER BY jumlah DESC, created_at ASC, id ASC"
     )
   );
 

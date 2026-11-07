@@ -2992,3 +2992,44 @@ textarea {
   margin: 6px 0 8px;
   font-size: 1.7rem;
 }
+
+/* Peringkat donasi: emas, perak, perunggu */
+.mahkota {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: start;
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  color: var(--ink);
+  box-shadow: 0 3px 0 rgba(10, 18, 43, 0.18);
+}
+.mahkota-ikon {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+.mahkota--emas {
+  background: linear-gradient(135deg, #ffe89a 0%, #f2c750 45%, #d4a12e 100%);
+}
+.mahkota--perak {
+  background: linear-gradient(135deg, #f4f7fb 0%, #d7dde7 45%, #aab4c2 100%);
+}
+.mahkota--perunggu {
+  background: linear-gradient(135deg, #f3cdaa 0%, #d59a68 45%, #a9683a 100%);
+}
+.donatur-card--emas,
+.dapur-item--emas {
+  border-color: var(--sun);
+  box-shadow: 0 10px 0 rgba(212, 161, 46, 0.28), var(--shadow-sm);
+}
+.donatur-card--perak,
+.dapur-item--perak {
+  border-color: #aab4c2;
+}
+.donatur-card--perunggu,
+.dapur-item--perunggu {
+  border-color: #c08552;
+}
