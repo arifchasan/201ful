@@ -2848,8 +2848,9 @@ textarea {
 }
 .donatur-card {
   display: grid;
-  gap: 8px;
-  padding: 18px;
+  gap: 6px;
+  padding: 13px 14px;
+  border-radius: 16px;
 }
 .donatur-head {
   display: flex;
@@ -2862,30 +2863,30 @@ textarea {
   margin: 0;
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 1.08rem;
+  font-size: 0.95rem;
   overflow-wrap: anywhere;
 }
 .donatur-jumlah {
-  padding: 3px 11px;
+  padding: 2px 9px;
   border-radius: 999px;
   background: var(--sun-soft);
   border: 2px solid var(--ink);
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 0.82rem;
+  font-size: 0.76rem;
   white-space: nowrap;
 }
 .donatur-pesan {
   margin: 0;
-  padding-left: 10px;
+  padding-left: 9px;
   border-left: 3px solid var(--sun);
-  font-size: 0.9rem;
+  font-size: 0.84rem;
   color: var(--ink-soft);
   overflow-wrap: anywhere;
 }
 .donatur-waktu {
   margin: 0;
-  font-size: 0.74rem;
+  font-size: 0.7rem;
   color: var(--ink-soft);
 }
 .donatur-cta {
