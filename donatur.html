@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Papan referal donasi 201FUL — total per anggota tim · LP201 AsiaWorks</title>
-<meta name="description" content="Papan peringkat referal donasi WOW DAY 201FUL: total donasi yang masuk lewat setiap anggota tim." />
+<title>Donatur 201FUL — nama, jumlah, dan pesan · LP201 AsiaWorks</title>
+<meta name="description" content="Daftar donatur WOW DAY 201FUL beserta jumlah donasi dan pesan yang mereka titipkan untuk anak-anak." />
 <meta name="theme-color" content="#0A3876" />
 <!-- Google Tag Manager -->
 <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-5TH245ZV');</script>
@@ -54,9 +54,9 @@
 <main id="konten">
   <section class="page-hero">
     <div class="wrap">
-      <p class="eyebrow eyebrow--sun">Referal &middot; 201FUL</p>
-      <h1>Papan <span class="hl">referal</span> donasi.</h1>
-      <p class="lead">Setiap donasi dicatat lewat anggota tim yang mengajak. Di sini terlihat total donasi tiap referal, dari yang terbesar. Donasi yang belum punya referal masuk ke baris <b>Tanpa referal</b>.</p>
+      <p class="eyebrow eyebrow--sun">Donatur &middot; 201FUL</p>
+      <h1>One heart, <span class="hl">satu langkah</span>.</h1>
+      <p class="lead">Terima kasih untuk setiap tangan yang ikut menyiapkan WOW DAY. Berikut nama, jumlah donasi, dan pesan yang dititipkan untuk anak-anak dan keluarganya.</p>
     </div>
   </section>
 
@@ -81,32 +81,8 @@
         <p class="small-note" id="donatur-persen">0% dari target</p>
       </div>
 
-      <div class="card referal-board">
-        <div class="referal-board-head">
-          <div>
-            <h2>Papan peringkat referal</h2>
-            <p>Total donasi yang tercatat lewat tiap anggota tim, diurutkan dari yang terbesar. Klik nama referal untuk melihat donaturnya.</p>
-          </div>
-          <span class="pill pill--sun">30 anggota tim</span>
-        </div>
-
-        <ol class="referal-list" id="referal-list" aria-live="polite"></ol>
-        <p class="card bukti-empty" id="referal-empty" hidden>Belum ada donasi yang tercatat lewat referal.</p>
-
-        <div class="referal-tanpa-wrap" id="referal-tanpa" hidden>
-          <button class="referal-tanpa" type="button" id="referal-tanpa-btn" aria-expanded="false" aria-controls="referal-tanpa-detail">
-            <span class="referal-tanpa-label">Tanpa referal</span>
-            <span class="referal-tanpa-meta" id="referal-tanpa-meta"></span>
-            <b class="referal-total" id="referal-tanpa-total">Rp 0</b>
-            <span class="referal-caret" aria-hidden="true">
-              <svg viewBox="0 0 12 8" focusable="false"><path d="M1.5 1.5 6 6l4.5-4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </span>
-          </button>
-          <div class="referal-detail" id="referal-tanpa-detail" hidden></div>
-        </div>
-
-        <p class="small-note referal-foot">Donasi yang masuk tanpa nama referal tetap dihitung di total keseluruhan, hanya tidak masuk ke peringkat anggota tim.</p>
-      </div>
+      <div class="donatur-grid" id="donatur-grid" aria-live="polite"></div>
+      <p class="card bukti-empty" id="donatur-empty" hidden>Belum ada donatur yang tercatat. Jadilah yang pertama lewat <a href="index.html#donasi">halaman donasi</a>.</p>
 
       <div class="donatur-cta">
         <a class="btn btn--coral" href="index.html#donasi">Salurkan donasi</a>

@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Papan referal donasi 201FUL (internal) · LP201 AsiaWorks</title>
+<meta name="description" content="Papan peringkat referal donasi WOW DAY 201FUL: total donasi yang masuk lewat setiap anggota tim." />
+<meta name="theme-color" content="#0A3876" />
+<meta name="robots" content="noindex, nofollow" />
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-5TH245ZV');</script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+</script>
+<!-- End Google Tag Manager -->
+<link rel="icon" href="images/logolp201-mark.png" type="image/png" />
+<link rel="apple-touch-icon" href="images/logolp201-mark.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-5TH245ZV" height="0" width="0" style="display:none;visibility:hidden" title="Google Tag Manager"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+<a class="skip-link" href="#konten">Lewati ke konten</a>
+
+<header class="site-header" id="site-header">
+  <div class="wrap header-inner">
+    <a class="brand" href="index.html" aria-label="201FUL LP201 AsiaWorks, ke beranda">
+      <img class="brand-logo" src="images/logolp201-mark.png" alt="201Ful — One Team, One Heart, One Love" width="2752" height="1536" />
+    </a>
+
+    <nav class="nav" id="primary-nav" aria-label="Navigasi utama">
+      <a href="index.html#tentang">Tentang Kami</a>
+      <a href="index.html#acara">Acara</a>
+      <a href="index.html#relawan">Relawan</a>
+      <a href="index.html#legacy">Legacy</a>
+      <a href="index.html#donasi">Donasi</a>
+      <a href="donatur.html">Donatur</a>
+      <a href="tim.html">Tim</a>
+      <a href="galeri.html">Galeri</a>
+      <a class="btn btn--sm btn--coral nav-cta" href="index.html#donasi">Donasi</a>
+    </nav>
+
+    <button class="nav-toggle" id="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" aria-label="Buka menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</header>
+
+<main id="konten">
+  <section class="page-hero">
+    <div class="wrap">
+      <p class="eyebrow eyebrow--sun">Internal &middot; 201FUL</p>
+      <h1>Papan <span class="hl">referal</span> donasi.</h1>
+      <p class="lead">Setiap donasi dicatat lewat anggota tim yang mengajak. Klik nama referal untuk melihat daftar donaturnya. Donasi yang belum punya referal masuk ke baris <b>Tanpa referal</b>. Halaman ini tidak ditautkan di menu.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <div class="card donasi-ringkas">
+        <div class="donasi-ringkas-grid">
+          <div class="donasi-ringkas-item">
+            <small>Terkumpul</small>
+            <b id="donatur-total">Rp 0</b>
+          </div>
+          <div class="donasi-ringkas-item">
+            <small>Target</small>
+            <b id="donatur-target">Rp 0</b>
+          </div>
+          <div class="donasi-ringkas-item">
+            <small>Donatur tercatat</small>
+            <b id="donatur-jumlah">0</b>
+          </div>
+        </div>
+        <div class="bar bar--sun"><span id="donatur-bar" style="width:0%"></span></div>
+        <p class="small-note" id="donatur-persen">0% dari target</p>
+      </div>
+
+      <div class="card referal-board">
+        <div class="referal-board-head">
+          <div>
+            <h2>Papan peringkat referal</h2>
+            <p>Total donasi yang tercatat lewat tiap anggota tim, diurutkan dari yang terbesar. Klik nama referal untuk melihat donaturnya.</p>
+          </div>
+          <span class="pill pill--sun">30 anggota tim</span>
+        </div>
+
+        <ol class="referal-list" id="referal-list" aria-live="polite"></ol>
+        <p class="card bukti-empty" id="referal-empty" hidden>Belum ada donasi yang tercatat lewat referal.</p>
+
+        <div class="referal-tanpa-wrap" id="referal-tanpa" hidden>
+          <button class="referal-tanpa" type="button" id="referal-tanpa-btn" aria-expanded="false" aria-controls="referal-tanpa-detail">
+            <span class="referal-tanpa-label">Tanpa referal</span>
+            <span class="referal-tanpa-meta" id="referal-tanpa-meta"></span>
+            <b class="referal-total" id="referal-tanpa-total">Rp 0</b>
+            <span class="referal-caret" aria-hidden="true">
+              <svg viewBox="0 0 12 8" focusable="false"><path d="M1.5 1.5 6 6l4.5-4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+          </button>
+          <div class="referal-detail" id="referal-tanpa-detail" hidden></div>
+        </div>
+
+        <p class="small-note referal-foot">Donasi yang masuk tanpa nama referal tetap dihitung di total keseluruhan, hanya tidak masuk ke peringkat anggota tim.</p>
+      </div>
+
+      <div class="donatur-cta">
+        <a class="btn btn--coral" href="index.html#donasi">Salurkan donasi</a>
+        <a class="btn btn--ghost" href="upload-bukti-transfer">Upload bukti transfer</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap footer-inner">
+    <div class="footer-brand">
+      <a class="brand brand--footer" href="index.html" aria-label="201FUL LP201 AsiaWorks, ke beranda">
+        <img class="brand-logo" src="images/logolp201-mark.png" alt="201Ful — One Team, One Heart, One Love" width="2752" height="1536" />
+      </a>
+      <p>One team, one heart, one love.</p>
+    </div>
+
+    <nav class="footer-nav" aria-label="Navigasi footer">
+      <h3>Jelajahi</h3>
+      <a href="index.html#tentang">Tentang Kami</a>
+      <a href="index.html#acara">Acara</a>
+      <a href="index.html#relawan">Relawan</a>
+      <a href="index.html#legacy">Legacy</a>
+      <a href="index.html#donasi">Donasi</a>
+      <a href="donatur.html">Donatur</a>
+      <a href="tim.html">Tim</a>
+      <a href="galeri.html">Galeri</a>
+    </nav>
+
+    <div class="footer-news">
+      <h3>Terhubung</h3>
+      <p>Ikuti keseharian tim kami di Instagram.</p>
+      <div class="socials">
+        <a href="https://www.instagram.com/201ful/" target="_blank" rel="noopener" aria-label="Instagram 201FUL">Instagram</a>
+      </div>
+    </div>
+  </div>
+  <div class="wrap footer-bottom">
+    <p>&copy; 2026 LP201 &middot; 201FUL. One team, one heart, one love.</p>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+<script src="donasi.js"></script>
+</body>
+</html>

@@ -101,7 +101,82 @@
       .catch(function () {});
   }
 
-  /* ---------------- Halaman /donatur: papan peringkat referal ---------------- */
+  /* ---------------- Halaman /donatur: daftar donatur ---------------- */
+
+  var daftarGrid = document.getElementById("donatur-grid");
+
+  if (daftarGrid) {
+    var daftarKosong = document.getElementById("donatur-empty");
+    var daftarJumlah = document.getElementById("donatur-jumlah");
+    var daftarTotal = document.getElementById("donatur-total");
+    var daftarTarget = document.getElementById("donatur-target");
+    var daftarPersen = document.getElementById("donatur-persen");
+    var daftarBar = document.getElementById("donatur-bar");
+
+    var buatKartuDonatur = function (item, urutan) {
+      var card = document.createElement("article");
+      card.className = "card donatur-card";
+
+      var peringkat = peringkatDari(item, urutan);
+      if (peringkat) {
+        card.className += " donatur-card--juara donatur-card--" + PERINGKAT[peringkat - 1].kelas;
+        card.appendChild(buatMahkota(peringkat));
+      }
+
+      var head = document.createElement("div");
+      head.className = "donatur-head";
+
+      var nama = document.createElement("h3");
+      nama.className = "donatur-nama";
+      nama.textContent = item.nama;
+
+      var jumlah = document.createElement("span");
+      jumlah.className = "donatur-jumlah";
+      jumlah.textContent = formatRupiah(item.jumlah);
+
+      head.appendChild(nama);
+      head.appendChild(jumlah);
+      card.appendChild(head);
+
+      if (item.pesan) {
+        var pesan = document.createElement("p");
+        pesan.className = "donatur-pesan";
+        pesan.textContent = "“" + item.pesan + "”";
+        card.appendChild(pesan);
+      }
+
+      if (item.at) {
+        var waktu = document.createElement("p");
+        waktu.className = "donatur-waktu";
+        waktu.textContent = formatTanggal(item.at);
+        card.appendChild(waktu);
+      }
+
+      return card;
+    };
+
+    ambilDonasi()
+      .then(function (data) {
+        daftarGrid.textContent = "";
+        (data.items || []).forEach(function (item, index) {
+          daftarGrid.appendChild(buatKartuDonatur(item, index + 1));
+        });
+        if (daftarJumlah) daftarJumlah.textContent = data.count || 0;
+        if (daftarTotal) daftarTotal.textContent = formatRupiah(data.terkumpul);
+        if (daftarTarget) daftarTarget.textContent = formatRupiah(data.target);
+        if (daftarPersen) daftarPersen.textContent = data.persen + "% dari target";
+        if (daftarBar) daftarBar.style.width = data.persen + "%";
+        if (daftarKosong) daftarKosong.hidden = (data.items || []).length > 0;
+      })
+      .catch(function () {
+        if (daftarKosong) {
+          daftarKosong.textContent = "Gagal memuat daftar donatur. Coba muat ulang halaman.";
+          daftarKosong.hidden = false;
+        }
+      });
+  }
+
+  /* ---------------- Halaman /donatur-internal: papan peringkat referal ---------------- */
 
   var referalList = document.getElementById("referal-list");
 
