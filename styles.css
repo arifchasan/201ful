@@ -3241,17 +3241,105 @@ body.lightbox-terbuka {
   gap: 8px;
 }
 .referal-row {
-  display: grid;
-  grid-template-columns: 26px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
   border: 2px solid rgba(10, 56, 118, 0.16);
   border-radius: 14px;
   background: var(--paper);
+  overflow: hidden;
+}
+.referal-row-btn {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) auto 16px;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.referal-row-btn--statis {
+  grid-template-columns: 26px minmax(0, 1fr) auto;
+  cursor: default;
+}
+.referal-row-btn:focus-visible {
+  outline: 3px solid var(--sun-soft);
+  outline-offset: -3px;
+}
+.referal-caret {
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  color: var(--ink-soft);
+  transition: transform 0.18s ease;
+}
+.referal-caret svg {
+  width: 12px;
+  height: 8px;
+  margin: auto;
+}
+.referal-row-btn[aria-expanded="true"] .referal-caret,
+.referal-tanpa[aria-expanded="true"] .referal-caret {
+  transform: rotate(180deg);
+}
+.referal-detail {
+  padding: 10px 12px 12px;
+  border-top: 2px dashed rgba(10, 56, 118, 0.18);
+  background: rgba(10, 56, 118, 0.03);
+}
+.referal-donor-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.referal-donor {
+  display: grid;
+  gap: 3px;
+  padding: 8px 10px;
+  border: 1.5px solid rgba(10, 56, 118, 0.12);
+  border-radius: 10px;
+  background: var(--paper);
+}
+.referal-donor-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 10px;
+}
+.referal-donor-nama {
+  font-size: 0.88rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.referal-donor-jumlah {
+  font-family: var(--font-display);
+  font-size: 0.84rem;
+  white-space: nowrap;
+}
+.referal-donor-pesan {
+  margin: 0;
+  padding-left: 8px;
+  border-left: 2px solid var(--sun);
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  overflow-wrap: anywhere;
+}
+.referal-donor-waktu {
+  margin: 0;
+  font-size: 0.68rem;
+  color: var(--ink-soft);
 }
 .referal-list--ringkas .referal-row {
+  display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
 }
 .referal-row--juara {
   box-shadow: 0 4px 0 rgba(212, 161, 46, 0.22);
@@ -3310,16 +3398,34 @@ body.lightbox-terbuka {
   font-size: 0.9rem;
   white-space: nowrap;
 }
+.referal-tanpa-wrap {
+  margin-top: 12px;
+  border: 2px dashed rgba(10, 56, 118, 0.32);
+  border-radius: 14px;
+  background: rgba(212, 161, 46, 0.1);
+  overflow: hidden;
+}
 .referal-tanpa {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 6px 12px;
-  margin-top: 12px;
+  width: 100%;
   padding: 12px 14px;
-  border: 2px dashed rgba(10, 56, 118, 0.32);
-  border-radius: 14px;
-  background: rgba(212, 161, 46, 0.1);
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.referal-tanpa:focus-visible {
+  outline: 3px solid var(--sun-soft);
+  outline-offset: -3px;
+}
+.referal-tanpa-wrap .referal-detail {
+  border-top-color: rgba(10, 56, 118, 0.2);
+  background: rgba(255, 255, 255, 0.6);
 }
 .referal-tanpa-label {
   font-family: var(--font-display);

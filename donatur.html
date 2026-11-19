@@ -85,7 +85,7 @@
         <div class="referal-board-head">
           <div>
             <h2>Papan peringkat referal</h2>
-            <p>Total donasi yang tercatat lewat tiap anggota tim, diurutkan dari yang terbesar.</p>
+            <p>Total donasi yang tercatat lewat tiap anggota tim, diurutkan dari yang terbesar. Klik nama referal untuk melihat donaturnya.</p>
           </div>
           <span class="pill pill--sun">30 anggota tim</span>
         </div>
@@ -93,10 +93,16 @@
         <ol class="referal-list" id="referal-list" aria-live="polite"></ol>
         <p class="card bukti-empty" id="referal-empty" hidden>Belum ada donasi yang tercatat lewat referal.</p>
 
-        <div class="referal-tanpa" id="referal-tanpa" hidden>
-          <span class="referal-tanpa-label">Tanpa referal</span>
-          <span class="referal-tanpa-meta" id="referal-tanpa-meta"></span>
-          <b class="referal-total" id="referal-tanpa-total">Rp 0</b>
+        <div class="referal-tanpa-wrap" id="referal-tanpa" hidden>
+          <button class="referal-tanpa" type="button" id="referal-tanpa-btn" aria-expanded="false" aria-controls="referal-tanpa-detail">
+            <span class="referal-tanpa-label">Tanpa referal</span>
+            <span class="referal-tanpa-meta" id="referal-tanpa-meta"></span>
+            <b class="referal-total" id="referal-tanpa-total">Rp 0</b>
+            <span class="referal-caret" aria-hidden="true">
+              <svg viewBox="0 0 12 8" focusable="false"><path d="M1.5 1.5 6 6l4.5-4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+          </button>
+          <div class="referal-detail" id="referal-tanpa-detail" hidden></div>
         </div>
 
         <p class="small-note referal-foot">Donasi yang masuk tanpa nama referal tetap dihitung di total keseluruhan, hanya tidak masuk ke peringkat anggota tim.</p>

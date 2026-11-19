@@ -202,12 +202,7 @@ function log(req, status, startedAt) {
   console.log(`${req.method} ${req.url} ${status} ${ms}ms`);
 }
 
-const DAPUR_PAGES = new Set([
-  "/dapur-lp201",
-  "/dapur-lp201.html",
-  "/update-referal",
-  "/update-referal.html"
-]);
+const DAPUR_PAGES = new Set(["/dapur-lp201", "/dapur-lp201.html"]);
 
 function serveStaticFile(req, res, filePath, startedAt) {
   fs.stat(filePath, (error, stat) => {
@@ -879,7 +874,6 @@ function handleReferalRoute(req, res, pathname, startedAt) {
       log(req, 405, startedAt);
       return;
     }
-    if (!requireDapur(req, res, startedAt)) return;
     listDonaturReferal(req, res, startedAt).catch((error) => databaseError(req, res, error, startedAt));
     return;
   }
@@ -896,7 +890,6 @@ function handleReferalRoute(req, res, pathname, startedAt) {
       log(req, 405, startedAt);
       return;
     }
-    if (!requireDapur(req, res, startedAt)) return;
     updateReferalDonatur(req, res, id, startedAt).catch((error) => databaseError(req, res, error, startedAt));
     return;
   }

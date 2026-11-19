@@ -107,7 +107,9 @@
 
   if (referalList) {
     var referalEmpty = document.getElementById("referal-empty");
-    var referalTanpa = document.getElementById("referal-tanpa");
+    var referalTanpaWrap = document.getElementById("referal-tanpa");
+    var referalTanpaBtn = document.getElementById("referal-tanpa-btn");
+    var referalTanpaDetail = document.getElementById("referal-tanpa-detail");
     var referalTanpaMeta = document.getElementById("referal-tanpa-meta");
     var referalTanpaTotal = document.getElementById("referal-tanpa-total");
     var jumlahEl = document.getElementById("donatur-jumlah");
@@ -116,25 +118,94 @@
     var persenElPage = document.getElementById("donatur-persen");
     var barElPage = document.getElementById("donatur-bar");
 
-    var buatBarisReferal = function (item, urutan) {
-      var total = Number(String(item.total === undefined || item.total === null ? "" : item.total).replace(/\D/g, ""));
+    var formatAngka = function (nilai) {
+      return Number(String(nilai === undefined || nilai === null ? "" : nilai).replace(/\D/g, ""));
+    };
+
+    var buatDetailDonatur = function (daftar) {
+      var list = document.createElement("ul");
+      list.className = "referal-donor-list";
+
+      daftar.forEach(function (donatur) {
+        var li = document.createElement("li");
+        li.className = "referal-donor";
+
+        var head = document.createElement("div");
+        head.className = "referal-donor-head";
+
+        var nama = document.createElement("span");
+        nama.className = "referal-donor-nama";
+        nama.textContent = donatur.nama;
+
+        var jumlah = document.createElement("b");
+        jumlah.className = "referal-donor-jumlah";
+        jumlah.textContent = formatRupiah(donatur.jumlah);
+
+        head.appendChild(nama);
+        head.appendChild(jumlah);
+        li.appendChild(head);
+
+        if (donatur.pesan) {
+          var pesan = document.createElement("p");
+          pesan.className = "referal-donor-pesan";
+          pesan.textContent = "“" + donatur.pesan + "”";
+          li.appendChild(pesan);
+        }
+
+        if (donatur.at) {
+          var waktu = document.createElement("p");
+          waktu.className = "referal-donor-waktu";
+          waktu.textContent = formatTanggal(donatur.at);
+          li.appendChild(waktu);
+        }
+
+        list.appendChild(li);
+      });
+
+      return list;
+    };
+
+    var buatCaret = function () {
+      var caret = document.createElement("span");
+      caret.className = "referal-caret";
+      caret.setAttribute("aria-hidden", "true");
+      caret.innerHTML =
+        '<svg viewBox="0 0 12 8" focusable="false"><path d="M1.5 1.5 6 6l4.5-4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      return caret;
+    };
+
+    var buatBarisReferal = function (item, urutan, daftar) {
+      var total = formatAngka(item.total);
+      var donatur = daftar || [];
       var row = document.createElement("li");
       row.className = "referal-row" + (total ? "" : " referal-row--nihil");
+
+      var berperingkat = total && urutan <= 3;
+      if (berperingkat) {
+        row.className += " referal-row--juara referal-row--" + PERINGKAT[urutan - 1].kelas;
+      }
+
+      var detailId = "referal-detail-" + urutan;
+      var head = document.createElement(donatur.length ? "button" : "div");
+      head.className = "referal-row-btn" + (donatur.length ? "" : " referal-row-btn--statis");
+
+      if (donatur.length) {
+        head.type = "button";
+        head.setAttribute("aria-expanded", "false");
+        head.setAttribute("aria-controls", detailId);
+      }
 
       var rank = document.createElement("span");
       rank.className = "referal-rank";
       rank.textContent = total ? String(urutan) : "–";
 
-      var info = document.createElement("div");
+      var info = document.createElement("span");
       info.className = "referal-info";
 
       var namaWrap = document.createElement("span");
       namaWrap.className = "referal-nama";
 
-      if (total && urutan <= 3) {
-        row.className += " referal-row--juara referal-row--" + PERINGKAT[urutan - 1].kelas;
-        namaWrap.appendChild(buatMahkota(urutan, "Referal terbesar"));
-      }
+      if (berperingkat) namaWrap.appendChild(buatMahkota(urutan, "Referal terbesar"));
 
       var nama = document.createElement("span");
       nama.textContent = item.nama;
@@ -151,9 +222,27 @@
       jumlah.className = "referal-total";
       jumlah.textContent = formatRupiah(total);
 
-      row.appendChild(rank);
-      row.appendChild(info);
-      row.appendChild(jumlah);
+      head.appendChild(rank);
+      head.appendChild(info);
+      head.appendChild(jumlah);
+      if (donatur.length) head.appendChild(buatCaret());
+      row.appendChild(head);
+
+      if (donatur.length) {
+        var detail = document.createElement("div");
+        detail.className = "referal-detail";
+        detail.id = detailId;
+        detail.hidden = true;
+        detail.appendChild(buatDetailDonatur(donatur));
+        row.appendChild(detail);
+
+        head.addEventListener("click", function () {
+          var buka = head.getAttribute("aria-expanded") === "true";
+          head.setAttribute("aria-expanded", buka ? "false" : "true");
+          detail.hidden = buka;
+        });
+      }
+
       return row;
     };
 
@@ -164,24 +253,61 @@
       });
     };
 
-    Promise.all([ambilDonasi(), ambilPapan()])
+    var ambilDonaturReferal = function () {
+      return fetch("/api/referal/donatur", { cache: "no-store" }).then(function (response) {
+        if (!response.ok) throw new Error("HTTP " + response.status);
+        return response.json();
+      });
+    };
+
+    if (referalTanpaBtn && referalTanpaDetail) {
+      referalTanpaBtn.addEventListener("click", function () {
+        var buka = referalTanpaBtn.getAttribute("aria-expanded") === "true";
+        referalTanpaBtn.setAttribute("aria-expanded", buka ? "false" : "true");
+        referalTanpaDetail.hidden = buka;
+      });
+    }
+
+    Promise.all([ambilDonasi(), ambilPapan(), ambilDonaturReferal()])
       .then(function (hasil) {
         var data = hasil[0];
         var papan = hasil[1];
+        var daftarDonatur = hasil[2].items || [];
+
+        var perReferal = {};
+        var tanpaList = [];
+
+        daftarDonatur.forEach(function (donatur) {
+          var kunci = donatur.referal || "";
+          if (!kunci) {
+            tanpaList.push(donatur);
+            return;
+          }
+          if (!perReferal[kunci]) perReferal[kunci] = [];
+          perReferal[kunci].push(donatur);
+        });
 
         referalList.textContent = "";
         (papan.items || []).forEach(function (item, index) {
-          referalList.appendChild(buatBarisReferal(item, index + 1));
+          referalList.appendChild(buatBarisReferal(item, index + 1, perReferal[item.nama] || []));
         });
 
         if (referalEmpty) referalEmpty.hidden = (papan.items || []).length > 0;
 
-        if (referalTanpa) {
+        if (referalTanpaWrap) {
           var tanpa = papan.tanpaReferal || { total: "0", jumlahDonatur: 0 };
-          var totalTanpa = Number(String(tanpa.total || "0").replace(/\D/g, ""));
-          referalTanpa.hidden = totalTanpa <= 0;
+          var totalTanpa = formatAngka(tanpa.total);
+          referalTanpaWrap.hidden = totalTanpa <= 0;
           if (referalTanpaTotal) referalTanpaTotal.textContent = formatRupiah(totalTanpa);
           if (referalTanpaMeta) referalTanpaMeta.textContent = (tanpa.jumlahDonatur || 0) + " donatur";
+
+          if (referalTanpaDetail && tanpaList.length) {
+            referalTanpaDetail.textContent = "";
+            referalTanpaDetail.appendChild(buatDetailDonatur(tanpaList));
+            referalTanpaDetail.hidden = referalTanpaBtn
+              ? referalTanpaBtn.getAttribute("aria-expanded") !== "true"
+              : true;
+          }
         }
 
         if (jumlahEl) jumlahEl.textContent = data.count || 0;
@@ -507,10 +633,6 @@
 
     var ambilDonaturReferal = function () {
       return fetch("/api/referal/donatur", { cache: "no-store" }).then(function (response) {
-        if (response.status === 401) {
-          sesiHabis(updateNote);
-          throw new Error("Sesi dapur sudah habis.");
-        }
         if (!response.ok) throw new Error("HTTP " + response.status);
         return response.json();
       });
