@@ -20,7 +20,7 @@
     { kelas: "perunggu", label: "Perunggu" }
   ];
 
-  function buatMahkota(nomor) {
+  function buatMahkota(nomor, konteks) {
     var data = PERINGKAT[nomor - 1];
     if (!data) return null;
 
@@ -28,7 +28,7 @@
     badge.className = "mahkota mahkota--" + data.kelas;
     badge.setAttribute(
       "aria-label",
-      "Donasi terbesar peringkat " + nomor + ", medali " + data.label
+      (konteks || "Donasi terbesar") + " peringkat " + nomor + ", medali " + data.label
     );
     badge.innerHTML =
       '<svg class="mahkota-ikon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
@@ -101,77 +101,99 @@
       .catch(function () {});
   }
 
-  /* ---------------- Halaman /donatur ---------------- */
+  /* ---------------- Halaman /donatur: papan peringkat referal ---------------- */
 
-  var grid = document.getElementById("donatur-grid");
+  var referalList = document.getElementById("referal-list");
 
-  if (grid) {
-    var kosong = document.getElementById("donatur-empty");
+  if (referalList) {
+    var referalEmpty = document.getElementById("referal-empty");
+    var referalTanpa = document.getElementById("referal-tanpa");
+    var referalTanpaMeta = document.getElementById("referal-tanpa-meta");
+    var referalTanpaTotal = document.getElementById("referal-tanpa-total");
     var jumlahEl = document.getElementById("donatur-jumlah");
     var totalEl = document.getElementById("donatur-total");
     var targetElPage = document.getElementById("donatur-target");
     var persenElPage = document.getElementById("donatur-persen");
     var barElPage = document.getElementById("donatur-bar");
 
-    var buatKartu = function (item, urutan) {
-      var card = document.createElement("article");
-      card.className = "card donatur-card";
+    var buatBarisReferal = function (item, urutan) {
+      var total = Number(String(item.total === undefined || item.total === null ? "" : item.total).replace(/\D/g, ""));
+      var row = document.createElement("li");
+      row.className = "referal-row" + (total ? "" : " referal-row--nihil");
 
-      var peringkat = peringkatDari(item, urutan);
-      if (peringkat) {
-        card.className += " donatur-card--juara donatur-card--" + PERINGKAT[peringkat - 1].kelas;
-        card.appendChild(buatMahkota(peringkat));
+      var rank = document.createElement("span");
+      rank.className = "referal-rank";
+      rank.textContent = total ? String(urutan) : "–";
+
+      var info = document.createElement("div");
+      info.className = "referal-info";
+
+      var namaWrap = document.createElement("span");
+      namaWrap.className = "referal-nama";
+
+      if (total && urutan <= 3) {
+        row.className += " referal-row--juara referal-row--" + PERINGKAT[urutan - 1].kelas;
+        namaWrap.appendChild(buatMahkota(urutan, "Referal terbesar"));
       }
 
-      var head = document.createElement("div");
-      head.className = "donatur-head";
-
-      var nama = document.createElement("h3");
-      nama.className = "donatur-nama";
+      var nama = document.createElement("span");
       nama.textContent = item.nama;
+      namaWrap.appendChild(nama);
 
-      var jumlah = document.createElement("span");
-      jumlah.className = "donatur-jumlah";
-      jumlah.textContent = formatRupiah(item.jumlah);
+      var meta = document.createElement("span");
+      meta.className = "referal-meta";
+      meta.textContent = item.divisi + " · " + (item.jumlahDonatur || 0) + " donatur";
 
-      head.appendChild(nama);
-      head.appendChild(jumlah);
-      card.appendChild(head);
+      info.appendChild(namaWrap);
+      info.appendChild(meta);
 
-      if (item.pesan) {
-        var pesan = document.createElement("p");
-        pesan.className = "donatur-pesan";
-        pesan.textContent = "“" + item.pesan + "”";
-        card.appendChild(pesan);
-      }
+      var jumlah = document.createElement("b");
+      jumlah.className = "referal-total";
+      jumlah.textContent = formatRupiah(total);
 
-      if (item.at) {
-        var waktu = document.createElement("p");
-        waktu.className = "donatur-waktu";
-        waktu.textContent = formatTanggal(item.at);
-        card.appendChild(waktu);
-      }
-
-      return card;
+      row.appendChild(rank);
+      row.appendChild(info);
+      row.appendChild(jumlah);
+      return row;
     };
 
-    ambilDonasi()
-      .then(function (data) {
-        grid.textContent = "";
-        (data.items || []).forEach(function (item, index) {
-          grid.appendChild(buatKartu(item, index + 1));
+    var ambilPapan = function () {
+      return fetch("/api/referal", { cache: "no-store" }).then(function (response) {
+        if (!response.ok) throw new Error("HTTP " + response.status);
+        return response.json();
+      });
+    };
+
+    Promise.all([ambilDonasi(), ambilPapan()])
+      .then(function (hasil) {
+        var data = hasil[0];
+        var papan = hasil[1];
+
+        referalList.textContent = "";
+        (papan.items || []).forEach(function (item, index) {
+          referalList.appendChild(buatBarisReferal(item, index + 1));
         });
+
+        if (referalEmpty) referalEmpty.hidden = (papan.items || []).length > 0;
+
+        if (referalTanpa) {
+          var tanpa = papan.tanpaReferal || { total: "0", jumlahDonatur: 0 };
+          var totalTanpa = Number(String(tanpa.total || "0").replace(/\D/g, ""));
+          referalTanpa.hidden = totalTanpa <= 0;
+          if (referalTanpaTotal) referalTanpaTotal.textContent = formatRupiah(totalTanpa);
+          if (referalTanpaMeta) referalTanpaMeta.textContent = (tanpa.jumlahDonatur || 0) + " donatur";
+        }
+
         if (jumlahEl) jumlahEl.textContent = data.count || 0;
         if (totalEl) totalEl.textContent = formatRupiah(data.terkumpul);
         if (targetElPage) targetElPage.textContent = formatRupiah(data.target);
         if (persenElPage) persenElPage.textContent = data.persen + "% dari target";
         if (barElPage) barElPage.style.width = data.persen + "%";
-        if (kosong) kosong.hidden = (data.items || []).length > 0;
       })
       .catch(function () {
-        if (kosong) {
-          kosong.textContent = "Gagal memuat daftar donatur. Coba muat ulang halaman.";
-          kosong.hidden = false;
+        if (referalEmpty) {
+          referalEmpty.textContent = "Gagal memuat papan referal. Coba muat ulang halaman.";
+          referalEmpty.hidden = false;
         }
       });
   }
@@ -460,5 +482,243 @@
 
     refreshDapur.addEventListener("click", muatDonatur);
     muatDonatur();
+  }
+
+  /* ---------------- Halaman /update-referal (tidak ada di menu) ---------------- */
+
+  var updateList = document.getElementById("update-list");
+
+  if (updateList) {
+    var updateRingkas = document.getElementById("update-ringkas");
+    var updateEmpty = document.getElementById("update-empty");
+    var updateNote = document.getElementById("update-note");
+    var updateJumlah = document.getElementById("update-jumlah");
+    var updateBerreferal = document.getElementById("update-berreferal");
+    var updateTanpa = document.getElementById("update-tanpa");
+    var updateRefresh = document.getElementById("update-refresh");
+    var divisiReferal = [];
+
+    var ambilPapanReferal = function () {
+      return fetch("/api/referal", { cache: "no-store" }).then(function (response) {
+        if (!response.ok) throw new Error("HTTP " + response.status);
+        return response.json();
+      });
+    };
+
+    var ambilDonaturReferal = function () {
+      return fetch("/api/referal/donatur", { cache: "no-store" }).then(function (response) {
+        if (response.status === 401) {
+          sesiHabis(updateNote);
+          throw new Error("Sesi dapur sudah habis.");
+        }
+        if (!response.ok) throw new Error("HTTP " + response.status);
+        return response.json();
+      });
+    };
+
+    var buatRingkasRow = function (nama, meta, total) {
+      var row = document.createElement("li");
+      row.className = "referal-row";
+
+      var info = document.createElement("div");
+      info.className = "referal-info";
+
+      var namaEl = document.createElement("span");
+      namaEl.className = "referal-nama";
+      namaEl.textContent = nama;
+
+      var metaEl = document.createElement("span");
+      metaEl.className = "referal-meta";
+      metaEl.textContent = meta;
+
+      info.appendChild(namaEl);
+      info.appendChild(metaEl);
+
+      var jumlahEl = document.createElement("b");
+      jumlahEl.className = "referal-total";
+      jumlahEl.textContent = formatRupiah(total);
+
+      row.appendChild(info);
+      row.appendChild(jumlahEl);
+      return row;
+    };
+
+    var renderRingkas = function (papan) {
+      var totalBerreferal = 0;
+      var orangBerreferal = 0;
+
+      if (updateRingkas) updateRingkas.textContent = "";
+
+      (papan.items || []).forEach(function (item) {
+        var total = Number(String(item.total || "0").replace(/\D/g, ""));
+        var banyak = Number(item.jumlahDonatur || 0);
+        if (!total) return;
+        totalBerreferal += total;
+        orangBerreferal += banyak;
+        if (updateRingkas) {
+          updateRingkas.appendChild(
+            buatRingkasRow(item.nama, item.divisi + " · " + banyak + " donatur", total)
+          );
+        }
+      });
+
+      var tanpa = papan.tanpaReferal || { total: "0", jumlahDonatur: 0 };
+      var totalTanpa = Number(String(tanpa.total || "0").replace(/\D/g, ""));
+      var orangTanpa = Number(tanpa.jumlahDonatur || 0);
+
+      if (totalTanpa > 0 && updateRingkas) {
+        updateRingkas.appendChild(buatRingkasRow("Tanpa referal", orangTanpa + " donatur", totalTanpa));
+      }
+
+      if (updateJumlah) updateJumlah.textContent = String(orangBerreferal + orangTanpa);
+      if (updateBerreferal) updateBerreferal.textContent = String(orangBerreferal);
+      if (updateTanpa) updateTanpa.textContent = String(orangTanpa);
+    };
+
+    var buatPilihan = function (terpilih) {
+      var select = document.createElement("select");
+      select.className = "referal-select";
+
+      var kosong = document.createElement("option");
+      kosong.value = "";
+      kosong.textContent = "— Tanpa referal —";
+      select.appendChild(kosong);
+
+      divisiReferal.forEach(function (divisi) {
+        var group = document.createElement("optgroup");
+        group.label = divisi.nama;
+        (divisi.anggota || []).forEach(function (nama) {
+          var option = document.createElement("option");
+          option.value = nama;
+          option.textContent = nama;
+          group.appendChild(option);
+        });
+        select.appendChild(group);
+      });
+
+      select.value = terpilih || "";
+      if (select.value !== (terpilih || "")) select.value = "";
+      return select;
+    };
+
+    var buatBarisUpdate = function (item) {
+      var row = document.createElement("article");
+      row.className = "dapur-item referal-update-item";
+
+      var top = document.createElement("div");
+      top.className = "dapur-item-top";
+
+      var nama = document.createElement("strong");
+      nama.textContent = item.nama;
+
+      var jumlah = document.createElement("span");
+      jumlah.className = "donatur-jumlah";
+      jumlah.textContent = formatRupiah(item.jumlah);
+
+      top.appendChild(nama);
+      top.appendChild(jumlah);
+      row.appendChild(top);
+
+      if (item.pesan) {
+        var pesan = document.createElement("p");
+        pesan.className = "dapur-item-pesan";
+        pesan.textContent = item.pesan;
+        row.appendChild(pesan);
+      }
+
+      if (item.at) {
+        var waktu = document.createElement("p");
+        waktu.className = "donatur-waktu";
+        waktu.textContent = formatTanggal(item.at);
+        row.appendChild(waktu);
+      }
+
+      var field = document.createElement("label");
+      field.className = "referal-select-field";
+
+      var labelText = document.createElement("span");
+      labelText.textContent = "Referal";
+
+      var select = buatPilihan(item.referal);
+      select.setAttribute("aria-label", "Referal untuk " + item.nama);
+
+      select.addEventListener("change", function () {
+        var nilai = select.value;
+        select.disabled = true;
+        setNote(updateNote, "Menyimpan referal " + item.nama + "…", "");
+
+        fetch("/api/referal/donatur/" + item.id, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ referal: nilai })
+        })
+          .then(function (response) {
+            return response.json().then(function (payload) {
+              return { status: response.status, ok: response.ok, payload: payload };
+            });
+          })
+          .then(function (result) {
+            if (result.status === 401) {
+              sesiHabis(updateNote);
+              return;
+            }
+            if (!result.ok || !result.payload.ok) {
+              throw new Error(result.payload.error || "Gagal menyimpan referal.");
+            }
+            setNote(
+              updateNote,
+              nilai
+                ? "Tersimpan: " + item.nama + " → " + nilai + "."
+                : "Tersimpan: " + item.nama + " tanpa referal.",
+              "success"
+            );
+            return ambilPapanReferal().then(renderRingkas);
+          })
+          .catch(function (error) {
+            setNote(updateNote, error.message || "Gagal menyimpan referal.", "error");
+            select.value = item.referal || "";
+          })
+          .then(function () {
+            select.disabled = false;
+          });
+      });
+
+      field.appendChild(labelText);
+      field.appendChild(select);
+      row.appendChild(field);
+
+      return row;
+    };
+
+    var muatReferal = function () {
+      setNote(updateNote, "Memuat data…", "");
+
+      return Promise.all([ambilDonaturReferal(), ambilPapanReferal()])
+        .then(function (hasil) {
+          var daftar = hasil[0];
+          var papan = hasil[1];
+
+          divisiReferal = papan.divisi || [];
+
+          updateList.textContent = "";
+          (daftar.items || []).forEach(function (item) {
+            updateList.appendChild(buatBarisUpdate(item));
+          });
+          if (updateEmpty) updateEmpty.hidden = (daftar.items || []).length > 0;
+
+          renderRingkas(papan);
+          setNote(updateNote, (daftar.count || 0) + " donatur dimuat. Pilih referal pada tiap donatur untuk menyimpan.", "");
+        })
+        .catch(function (error) {
+          if (updateEmpty) {
+            updateEmpty.textContent = "Gagal memuat data. Coba muat ulang halaman.";
+            updateEmpty.hidden = false;
+          }
+          setNote(updateNote, error.message || "Gagal memuat data.", "error");
+        });
+    };
+
+    if (updateRefresh) updateRefresh.addEventListener("click", muatReferal);
+    muatReferal();
   }
 })();

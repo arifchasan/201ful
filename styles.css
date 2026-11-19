@@ -3209,3 +3209,159 @@ body.lightbox-terbuka {
     max-height: calc(100vh - 170px);
   }
 }
+
+/* Papan peringkat referal donasi */
+.referal-board {
+  margin-top: 26px;
+  padding: 18px 16px 20px;
+}
+.referal-board-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px 14px;
+  margin-bottom: 16px;
+}
+.referal-board-head h2 {
+  margin: 0 0 4px;
+  font-size: 1.3rem;
+}
+.referal-board-head p {
+  margin: 0;
+  font-size: 0.86rem;
+  color: var(--ink-soft);
+  max-width: 54ch;
+}
+.referal-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.referal-row {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 2px solid rgba(10, 56, 118, 0.16);
+  border-radius: 14px;
+  background: var(--paper);
+}
+.referal-list--ringkas .referal-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+.referal-row--juara {
+  box-shadow: 0 4px 0 rgba(212, 161, 46, 0.22);
+}
+.referal-row--emas {
+  border-color: var(--sun);
+}
+.referal-row--perak {
+  border-color: #aab4c2;
+  box-shadow: 0 4px 0 rgba(170, 180, 194, 0.3);
+}
+.referal-row--perunggu {
+  border-color: #c08552;
+  box-shadow: 0 4px 0 rgba(192, 133, 82, 0.28);
+}
+.referal-row--nihil {
+  opacity: 0.6;
+}
+.referal-rank {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+  text-align: center;
+}
+.referal-info {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.referal-nama {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.95rem;
+  overflow-wrap: anywhere;
+}
+.referal-nama .mahkota {
+  width: 20px;
+  height: 20px;
+  border-width: 2px;
+}
+.referal-nama .mahkota-ikon {
+  width: 12px;
+  height: 12px;
+}
+.referal-meta {
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+  overflow-wrap: anywhere;
+}
+.referal-total {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+.referal-tanpa {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 2px dashed rgba(10, 56, 118, 0.32);
+  border-radius: 14px;
+  background: rgba(212, 161, 46, 0.1);
+}
+.referal-tanpa-label {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+.referal-tanpa-meta {
+  font-size: 0.74rem;
+  color: var(--ink-soft);
+  margin-right: auto;
+}
+.referal-foot {
+  margin-top: 14px;
+}
+.referal-update-item {
+  gap: 8px;
+}
+.referal-select-field {
+  display: grid;
+  gap: 5px;
+  margin-top: 4px;
+}
+.referal-select-field > span {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.referal-select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2.5px solid var(--ink);
+  border-radius: 12px;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+}
+.referal-select:focus {
+  outline: 3px solid var(--sun-soft);
+}
+.referal-select:disabled {
+  opacity: 0.6;
+}

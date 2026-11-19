@@ -13,6 +13,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { randomUUID, createHmac, timingSafeEqual } = require("node:crypto");
 const mysql = require("mysql2/promise");
+const { DIVISI, ANGGOTA, NAMA_ANGGOTA } = require("./lib/anggota");
 
 const ROOT = __dirname;
 const PORT = Number(process.env.PORT) || 3001;
@@ -108,6 +109,7 @@ const SCHEMA_STATEMENTS = [
     nama VARCHAR(80) NOT NULL,
     jumlah BIGINT UNSIGNED NOT NULL DEFAULT 0,
     pesan VARCHAR(500) NULL,
+    referal VARCHAR(80) NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     KEY idx_donatur_created (created_at)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
@@ -121,6 +123,13 @@ const SCHEMA_STATEMENTS = [
 async function ensureSchema() {
   for (const statement of SCHEMA_STATEMENTS) {
     await withDbRetry(() => pool.query(statement));
+  }
+
+  /* Kolom referal untuk database lama: ditambahkan sekali, aman diulang. */
+  const [kolomReferal] = await withDbRetry(() => pool.query("SHOW COLUMNS FROM donatur LIKE 'referal'"));
+  if (!kolomReferal.length) {
+    await withDbRetry(() => pool.query("ALTER TABLE donatur ADD COLUMN referal VARCHAR(80) NULL AFTER pesan"));
+    console.log("[201ful] kolom donatur.referal ditambahkan");
   }
 
   await withDbRetry(() =>
@@ -193,7 +202,12 @@ function log(req, status, startedAt) {
   console.log(`${req.method} ${req.url} ${status} ${ms}ms`);
 }
 
-const DAPUR_PAGES = new Set(["/dapur-lp201", "/dapur-lp201.html"]);
+const DAPUR_PAGES = new Set([
+  "/dapur-lp201",
+  "/dapur-lp201.html",
+  "/update-referal",
+  "/update-referal.html"
+]);
 
 function serveStaticFile(req, res, filePath, startedAt) {
   fs.stat(filePath, (error, stat) => {
@@ -755,6 +769,141 @@ async function updatePengaturan(req, res, startedAt) {
   sendJson(req, res, 200, { ok: true, ...ringkasan }, startedAt);
 }
 
+/* ---------------- Referal donasi: total per anggota tim ---------------- */
+
+async function readPapanReferal() {
+  const [rows] = await withDbRetry(() =>
+    pool.query(
+      "SELECT referal, COALESCE(SUM(jumlah), 0) AS total, COUNT(*) AS banyak FROM donatur GROUP BY referal"
+    )
+  );
+
+  const perAnggota = new Map();
+  const tanpa = { total: 0, jumlahDonatur: 0 };
+
+  for (const row of rows) {
+    const total = Number(row.total || 0);
+    const banyak = Number(row.banyak || 0);
+    const nama = row.referal && NAMA_ANGGOTA.has(row.referal) ? row.referal : "";
+
+    if (!nama) {
+      tanpa.total += total;
+      tanpa.jumlahDonatur += banyak;
+      continue;
+    }
+
+    const data = perAnggota.get(nama) || { total: 0, jumlahDonatur: 0 };
+    data.total += total;
+    data.jumlahDonatur += banyak;
+    perAnggota.set(nama, data);
+  }
+
+  const items = ANGGOTA.map((anggota) => {
+    const data = perAnggota.get(anggota.nama) || { total: 0, jumlahDonatur: 0 };
+    return {
+      nama: anggota.nama,
+      divisi: anggota.divisi,
+      total: String(data.total),
+      jumlahDonatur: data.jumlahDonatur
+    };
+  }).sort((a, b) => Number(b.total) - Number(a.total) || a.nama.localeCompare(b.nama, "id"));
+
+  return {
+    items,
+    tanpaReferal: { total: String(tanpa.total), jumlahDonatur: tanpa.jumlahDonatur }
+  };
+}
+
+async function listDonaturReferal(req, res, startedAt) {
+  const [rows] = await withDbRetry(() =>
+    pool.query(
+      "SELECT id, nama, jumlah, pesan, referal, DATE_FORMAT(created_at, '%Y-%m-%dT%H:%i:%s.000Z') AS created_at FROM donatur ORDER BY jumlah DESC, created_at ASC, id ASC"
+    )
+  );
+
+  const items = rows.map((row) => ({
+    id: row.id,
+    nama: row.nama,
+    jumlah: String(row.jumlah || 0),
+    pesan: row.pesan || "",
+    referal: row.referal || "",
+    at: row.created_at
+  }));
+
+  sendJson(req, res, 200, { ok: true, count: items.length, items }, startedAt);
+}
+
+async function updateReferalDonatur(req, res, id, startedAt) {
+  let body;
+  try {
+    body = await readJsonBody(req);
+  } catch {
+    sendJson(req, res, 400, { ok: false, error: "Data yang dikirim tidak valid." }, startedAt);
+    return;
+  }
+
+  const referal = cleanText(body.referal, 80);
+  if (referal && !NAMA_ANGGOTA.has(referal)) {
+    sendJson(req, res, 400, { ok: false, error: "Referal harus nama anggota tim 201FUL." }, startedAt);
+    return;
+  }
+
+  const [result] = await withDbRetry(() =>
+    pool.execute("UPDATE donatur SET referal = ? WHERE id = ?", [referal || null, id])
+  );
+
+  if (!result.affectedRows) {
+    sendJson(req, res, 404, { ok: false, error: "Donatur tidak ditemukan." }, startedAt);
+    return;
+  }
+
+  sendJson(req, res, 200, { ok: true, id, referal }, startedAt);
+}
+
+function handleReferalRoute(req, res, pathname, startedAt) {
+  if (pathname === "/api/referal") {
+    if (req.method !== "GET" && req.method !== "HEAD") {
+      methodNotAllowed(res, "GET, HEAD");
+      log(req, 405, startedAt);
+      return;
+    }
+    readPapanReferal()
+      .then((papan) => sendJson(req, res, 200, { ok: true, divisi: DIVISI, ...papan }, startedAt))
+      .catch((error) => databaseError(req, res, error, startedAt));
+    return;
+  }
+
+  if (pathname === "/api/referal/donatur") {
+    if (req.method !== "GET" && req.method !== "HEAD") {
+      methodNotAllowed(res, "GET, HEAD");
+      log(req, 405, startedAt);
+      return;
+    }
+    if (!requireDapur(req, res, startedAt)) return;
+    listDonaturReferal(req, res, startedAt).catch((error) => databaseError(req, res, error, startedAt));
+    return;
+  }
+
+  const itemPrefix = "/api/referal/donatur/";
+  if (pathname.startsWith(itemPrefix)) {
+    const id = pathname.slice(itemPrefix.length);
+    if (!/^[0-9a-fA-F-]{36}$/.test(id)) {
+      sendJson(req, res, 404, { ok: false, error: "Donatur tidak ditemukan." }, startedAt);
+      return;
+    }
+    if (req.method !== "PATCH" && req.method !== "PUT") {
+      methodNotAllowed(res, "PATCH, PUT");
+      log(req, 405, startedAt);
+      return;
+    }
+    if (!requireDapur(req, res, startedAt)) return;
+    updateReferalDonatur(req, res, id, startedAt).catch((error) => databaseError(req, res, error, startedAt));
+    return;
+  }
+
+  sendJson(req, res, 404, { ok: false, error: "Endpoint tidak ditemukan." }, startedAt);
+}
+
 function methodNotAllowed(res, allow) {
   res.writeHead(405, {
     ...NO_CACHE_HEADERS,
@@ -939,6 +1088,11 @@ const server = http.createServer((req, res) => {
 
   if (pathname === "/api/bukti-transfer" || pathname.startsWith("/api/bukti-transfer/")) {
     handleBuktiRoute(req, res, pathname, startedAt);
+    return;
+  }
+
+  if (pathname === "/api/referal" || pathname.startsWith("/api/referal/")) {
+    handleReferalRoute(req, res, pathname, startedAt);
     return;
   }
 
