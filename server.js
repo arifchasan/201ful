@@ -13,7 +13,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { randomUUID, createHmac, timingSafeEqual } = require("node:crypto");
 const mysql = require("mysql2/promise");
-const { DIVISI, ANGGOTA, NAMA_ANGGOTA } = require("./lib/anggota");
+const { DIVISI } = require("./lib/anggota");
 
 const ROOT = __dirname;
 const PORT = Number(process.env.PORT) || 3001;
@@ -113,6 +113,12 @@ const SCHEMA_STATEMENTS = [
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     KEY idx_donatur_created (created_at)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+  `CREATE TABLE IF NOT EXISTS referal_anggota (
+    nama VARCHAR(80) NOT NULL PRIMARY KEY,
+    divisi VARCHAR(120) NOT NULL,
+    urutan INT UNSIGNED NOT NULL DEFAULT 0,
+    dibuat DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
   `CREATE TABLE IF NOT EXISTS pengaturan (
     nama VARCHAR(50) NOT NULL PRIMARY KEY,
     nilai VARCHAR(255) NOT NULL,
@@ -130,6 +136,29 @@ async function ensureSchema() {
   if (!kolomReferal.length) {
     await withDbRetry(() => pool.query("ALTER TABLE donatur ADD COLUMN referal VARCHAR(80) NULL AFTER pesan"));
     console.log("[201ful] kolom donatur.referal ditambahkan");
+  }
+
+  /* Daftar nama referal tinggal di database supaya tidak tereset saat kode
+     diperbarui. Isi awal hanya diambil dari lib/anggota.js ketika tabel
+     masih kosong; setelah itu database yang jadi sumber datanya. */
+  const [anggotaRows] = await withDbRetry(() =>
+    pool.query("SELECT COUNT(*) AS banyak FROM referal_anggota")
+  );
+  if (!Number(anggotaRows[0].banyak)) {
+    let urutan = 0;
+    const values = [];
+    for (const divisi of DIVISI) {
+      for (const nama of divisi.anggota) {
+        urutan += 1;
+        values.push([nama, divisi.nama, urutan]);
+      }
+    }
+    if (values.length) {
+      await withDbRetry(() =>
+        pool.query("INSERT INTO referal_anggota (nama, divisi, urutan) VALUES ?", [values])
+      );
+      console.log("[201ful] daftar anggota referal diisi ke database:", values.length);
+    }
   }
 
   await withDbRetry(() =>
@@ -766,7 +795,33 @@ async function updatePengaturan(req, res, startedAt) {
 
 /* ---------------- Referal donasi: total per anggota tim ---------------- */
 
+async function readAnggotaReferal() {
+  const [rows] = await withDbRetry(() =>
+    pool.query("SELECT nama, divisi, urutan FROM referal_anggota ORDER BY urutan ASC, nama ASC")
+  );
+
+  const divisi = [];
+  const perDivisi = new Map();
+
+  for (const row of rows) {
+    let grup = perDivisi.get(row.divisi);
+    if (!grup) {
+      grup = { nama: row.divisi, anggota: [] };
+      perDivisi.set(row.divisi, grup);
+      divisi.push(grup);
+    }
+    grup.anggota.push(row.nama);
+  }
+
+  return {
+    anggota: rows.map((row) => ({ nama: row.nama, divisi: row.divisi })),
+    divisi,
+    nama: new Set(rows.map((row) => row.nama))
+  };
+}
+
 async function readPapanReferal() {
+  const daftar = await readAnggotaReferal();
   const [rows] = await withDbRetry(() =>
     pool.query(
       "SELECT referal, COALESCE(SUM(jumlah), 0) AS total, COUNT(*) AS banyak FROM donatur GROUP BY referal"
@@ -779,7 +834,7 @@ async function readPapanReferal() {
   for (const row of rows) {
     const total = Number(row.total || 0);
     const banyak = Number(row.banyak || 0);
-    const nama = row.referal && NAMA_ANGGOTA.has(row.referal) ? row.referal : "";
+    const nama = row.referal && daftar.nama.has(row.referal) ? row.referal : "";
 
     if (!nama) {
       tanpa.total += total;
@@ -793,7 +848,7 @@ async function readPapanReferal() {
     perAnggota.set(nama, data);
   }
 
-  const items = ANGGOTA.map((anggota) => {
+  const items = daftar.anggota.map((anggota) => {
     const data = perAnggota.get(anggota.nama) || { total: 0, jumlahDonatur: 0 };
     return {
       nama: anggota.nama,
@@ -804,6 +859,7 @@ async function readPapanReferal() {
   }).sort((a, b) => Number(b.total) - Number(a.total) || a.nama.localeCompare(b.nama, "id"));
 
   return {
+    divisi: daftar.divisi,
     items,
     tanpaReferal: { total: String(tanpa.total), jumlahDonatur: tanpa.jumlahDonatur }
   };
@@ -838,9 +894,12 @@ async function updateReferalDonatur(req, res, id, startedAt) {
   }
 
   const referal = cleanText(body.referal, 80);
-  if (referal && !NAMA_ANGGOTA.has(referal)) {
-    sendJson(req, res, 400, { ok: false, error: "Referal harus nama anggota tim 201FUL." }, startedAt);
-    return;
+  if (referal) {
+    const daftar = await readAnggotaReferal();
+    if (!daftar.nama.has(referal)) {
+      sendJson(req, res, 400, { ok: false, error: "Referal harus nama anggota tim 201FUL." }, startedAt);
+      return;
+    }
   }
 
   const [result] = await withDbRetry(() =>
@@ -863,7 +922,7 @@ function handleReferalRoute(req, res, pathname, startedAt) {
       return;
     }
     readPapanReferal()
-      .then((papan) => sendJson(req, res, 200, { ok: true, divisi: DIVISI, ...papan }, startedAt))
+      .then((papan) => sendJson(req, res, 200, { ok: true, ...papan }, startedAt))
       .catch((error) => databaseError(req, res, error, startedAt));
     return;
   }
